@@ -1,0 +1,270 @@
+<template>
+  <div class="user-profile-container">
+    <van-nav-bar
+      title="用户资料"
+      left-text="返回"
+      left-arrow
+      @click-left="goBack"
+    />
+
+    <div class="content" v-if="userInfo">
+      <!-- 用户基本信息 -->
+      <div class="user-basic-info">
+        <van-image
+          round
+          width="80"
+          height="80"
+          :src="userInfo.avatar || '/default-avatar.jpg'"
+        />
+        <div class="user-details">
+          <h2 class="user-name">{{ userInfo.nickname }}</h2>
+          <p class="user-bio">{{ userInfo.bio || '这个人很懒，什么都没写' }}</p>
+        </div>
+      </div>
+
+      <!-- 运动水平 -->
+      <div class="sports-level-card">
+        <div class="card-header">
+          <h3>运动水平</h3>
+        </div>
+        <div class="sports-level-list">
+          <div 
+            v-for="sport in userInfo.sports" 
+            :key="sport.name"
+            class="sport-level-item"
+          >
+            <span class="sport-name" :style="{ color: getSportColor(sport.name) }">
+              {{ sport.name }}
+            </span>
+            <span class="sport-level" :style="{ backgroundColor: getLevelColor(sport.level) }">
+              {{ sport.level }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 参与过的球局 -->
+      <div class="match-history-card">
+        <div class="card-header">
+          <h3>参与过的球局</h3>
+        </div>
+        <div class="match-history-list">
+          <div 
+            v-for="match in userMatches" 
+            :key="match.id"
+            class="match-history-item"
+            @click="viewMatchDetail(match.id)"
+          >
+            <div class="match-info">
+              <span class="sport-tag" :style="{ backgroundColor: getSportColor(match.sport) }">
+                {{ match.sport }}
+              </span>
+              <span class="match-title">{{ match.title }}</span>
+            </div>
+            <div class="match-time">{{ formatTime(match.time) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useMatchStore } from '../stores/match'
+import { getSportColor, getLevelColor } from '../utils/colors'
+
+const route = useRoute()
+const router = useRouter()
+const matchStore = useMatchStore()
+
+const userInfo = ref(null)
+const userMatches = ref([])
+
+// 获取用户信息（这里需要根据实际API调整）
+const loadUserInfo = (userId) => {
+  // 模拟用户数据
+  userInfo.value = {
+    id: userId,
+    nickname: '球友' + userId,
+    avatar: '',
+    bio: '热爱运动的球友',
+    sports: [
+      { name: '匹克球', level: '进阶' },
+      { name: '网球', level: '初级' },
+      { name: '羽毛球', level: '专业' }
+    ]
+  }
+}
+
+// 获取用户参与的球局
+const loadUserMatches = (userId) => {
+  const allMatches = matchStore.getFilteredMatches()
+  userMatches.value = allMatches.filter(match => 
+    match.participants.some(p => p.id === userId)
+  )
+}
+
+// 格式化时间
+const formatTime = (timeStr) => {
+  return new Date(timeStr).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 查看球局详情
+const viewMatchDetail = (matchId) => {
+  router.push(`/match/${matchId}`)
+}
+
+// 返回
+const goBack = () => {
+  router.back()
+}
+
+onMounted(() => {
+  const userId = parseInt(route.params.id)
+  loadUserInfo(userId)
+  loadUserMatches(userId)
+})
+</script>
+
+<style scoped>
+.user-profile-container {
+  height: 100vh;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.user-basic-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.user-bio {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.sports-level-card,
+.match-history-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.sports-level-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sport-level-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sport-level-item:last-child {
+  border-bottom: none;
+}
+
+.sport-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sport-level {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: white;
+  font-weight: bold;
+}
+
+.match-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.match-history-item:hover {
+  background: #e9ecef;
+}
+
+.match-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sport-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.match-title {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.match-time {
+  font-size: 12px;
+  color: #666;
+}
+</style>
