@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayPal 前端功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .status-unknown {
+            background-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 PlayPal 前端功能测试</h1>
+    
+    <div class="test-container">
+        <h2>API 连接状态</h2>
+        <div class="api-status">
+            <span class="status-indicator" id="apiStatus"></span>
+            <span id="apiStatusText">正在检查 API 连接...</span>
+        </div>
+        
+        <div class="test-section">
+            <h3>用户认证测试</h3>
+            <button onclick="testUserRegistration()">测试用户注册</button>
+            <button onclick="testUserLogin()">测试用户登录</button>
+            <button onclick="testUserProfile()">测试用户资料</button>
+            <div id="authResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>球局功能测试</h3>
+            <button onclick="testMatchCreation()">测试创建球局</button>
+            <button onclick="testMatchListing()">测试球局列表</button>
+            <button onclick="testMatchJoin()">测试加入球局</button>
+            <div id="matchResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>实时功能测试</h3>
+            <button onclick="testRealtimeSubscription()">测试实时订阅</button>
+            <button onclick="testMessageSending()">测试消息发送</button>
+            <div id="realtimeResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>性能测试</h3>
+            <button onclick="testApiPerformance()">测试 API 性能</button>
+            <button onclick="testConcurrentRequests()">测试并发请求</button>
+            <div id="performanceResults"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        // Supabase 配置
+        const supabaseUrl = 'https://nanhthqbcmqxqlqazevm.supabase.co'
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbmh0aHFiY21xeHFscWF6ZXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNTQzNTQsImV4cCI6MjA3NjgzMDM1NH0.5UkguCPOX6xm9WqZRPFwcMVZS0Lxgc4mVm9vpzoaD1w'
+        
+        const supabase = createClient(supabaseUrl, supabaseAnonKey)
+        let currentUser = null
+        let testMatchId = null
+        
+        // 检查 API 连接状态
+        async function checkApiStatus() {
+            const statusIndicator = document.getElementById('apiStatus')
+            const statusText = document.getElementById('apiStatusText')
+            
+            try {
+                const { data, error } = await supabase.auth.getSession()
+                
+                if (error) {
+                    statusIndicator.className = 'status-indicator status-offline'
+                    statusText.textContent = 'API 连接失败: ' + error.message
+                } else {
+                    statusIndicator.className = 'status-indicator status-online'
+                    statusText.textContent = 'API 连接正常 - Supabase 服务在线'
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator status-unknown'
+                statusText.textContent = 'API 连接检查异常: ' + error.message
+            }
+        }
+        
+        // 显示测试结果
+        function showResult(containerId, message, isSuccess = true) {
+            const container = document.getElementById(containerId)
+            const resultDiv = document.createElement('div')
+            resultDiv.className = `test-result ${isSuccess ? 'success' : 'error'}`
+            resultDiv.innerHTML = `
+                <strong>${new Date().toLocaleTimeString()}</strong><br>
+                ${message}
+            `
+            container.appendChild(resultDiv)
+            container.scrollTop = container.scrollHeight
+        }
+        
+        // 测试用户注册
+        async function testUserRegistration() {
+            const testEmail = `test_${Date.now()}@playpal.com`
+            
+            showResult('authResults', '开始测试用户注册...', true)
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: 'Test123456!',
+                    options: {
+                        data: {
+                            nickname: '测试用户'
+                        }
+                    }
+                })
+                
+                if (error) {
+                    showResult('authResults', `注册失败: ${error.message}`, false)
+                } else {
+                    showResult('authResults', `注册成功! 用户ID: ${data.user?.id || 'N/A'}`, true)
+                    currentUser = data.user
+                }
+            } catch (error) {
+                showResult('authResults', `注册异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试用户登录
+        async function testUserLogin() {
+            showResult('authResults', '开始测试用户登录...', true)
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'test@playpal.com',
+                    password: 'Test123456!'
+                })
+                
+                if (error) {
+                    showResult('authResults', `登录失败: ${error.message}`, false)
+                } else {
+                    showResult('authResults', `登录成功! 欢迎 ${data.user?.email}`, true)
+                    currentUser = data.user
+                }
+            } catch (error) {
+                showResult('authResults', `登录异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试用户资料
+        async function testUserProfile() {
+            if (!currentUser) {
+                showResult('authResults', '请先登录用户', false)
+                return
+            }
+            
+            showResult('authResults', '开始测试用户资料...', true)
+            
+            try {
+                // 创建用户资料
+                const { error } = await supabase
+                    .from('profiles')
+                    .upsert([{
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        nickname: '测试用户',
+                        pickleball_level: '3.0'
+                    }])
+                
+                if (error) {
+                    showResult('authResults', `创建资料失败: ${error.message}`, false)
+                } else {
+                    showResult('authResults', '用户资料创建成功!', true)
+                }
+            } catch (error) {
+                showResult('authResults', `资料操作异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试创建球局
+        async function testMatchCreation() {
+            if (!currentUser) {
+                showResult('matchResults', '请先登录用户', false)
+                return
+            }
+            
+            showResult('matchResults', '开始测试创建球局...', true)
+            
+            try {
+                const matchData = {
+                    title: '前端测试球局',
+                    sport: '匹克球',
+                    time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    location: '测试场地',
+                    max_players: 4,
+                    description: '前端功能测试用球局',
+                    creator_id: currentUser.id
+                }
+                
+                const { data, error } = await supabase
+                    .from('matches')
+                    .insert([matchData])
+                    .select()
+                
+                if (error) {
+                    showResult('matchResults', `创建球局失败: ${error.message}`, false)
+                } else {
+                    testMatchId = data[0].id
+                    showResult('matchResults', `球局创建成功! ID: ${testMatchId}`, true)
+                }
+            } catch (error) {
+                showResult('matchResults', `创建球局异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试球局列表
+        async function testMatchListing() {
+            showResult('matchResults', '开始测试球局列表...', true)
+            
+            try {
+                const { data, error } = await supabase
+                    .from('matches')
+                    .select(`
+                        *,
+                        creator:profiles!matches_creator_id_fkey(nickname, avatar),
+                        participants:match_participants(participant:profiles!match_participants_participant_id_fkey(nickname))
+                    `)
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false })
+                    .limit(5)
+                
+                if (error) {
+                    showResult('matchResults', `获取球局列表失败: ${error.message}`, false)
+                } else {
+                    showResult('matchResults', `获取成功! 共 ${data.length} 个球局`, true)
+                }
+            } catch (error) {
+                showResult('matchResults', `获取球局列表异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试加入球局
+        async function testMatchJoin() {
+            if (!currentUser || !testMatchId) {
+                showResult('matchResults', '请先创建测试球局', false)
+                return
+            }
+            
+            showResult('matchResults', '开始测试加入球局...', true)
+            
+            try {
+                const { error } = await supabase
+                    .from('match_participants')
+                    .insert([{
+                        match_id: testMatchId,
+                        participant_id: currentUser.id
+                    }])
+                
+                if (error) {
+                    showResult('matchResults', `加入球局失败: ${error.message}`, false)
+                } else {
+                    showResult('matchResults', '成功加入球局!', true)
+                }
+            } catch (error) {
+                showResult('matchResults', `加入球局异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试实时订阅
+        async function testRealtimeSubscription() {
+            showResult('realtimeResults', '开始测试实时订阅...', true)
+            
+            try {
+                const subscription = supabase
+                    .channel('frontend-test')
+                    .on('postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: 'matches' },
+                        (payload) => {
+                            showResult('realtimeResults', `实时订阅收到消息: ${JSON.stringify(payload)}`, true)
+                        }
+                    )
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            showResult('realtimeResults', '实时订阅已建立!', true)
+                        }
+                    })
+                
+                // 5秒后取消订阅
+                setTimeout(() => {
+                    subscription.unsubscribe()
+                    showResult('realtimeResults', '实时订阅已取消', true)
+                }, 5000)
+                
+            } catch (error) {
+                showResult('realtimeResults', `实时订阅异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试消息发送
+        async function testMessageSending() {
+            if (!currentUser || !testMatchId) {
+                showResult('realtimeResults', '请先创建测试球局', false)
+                return
+            }
+            
+            showResult('realtimeResults', '开始测试消息发送...', true)
+            
+            try {
+                const { error } = await supabase
+                    .from('messages')
+                    .insert([{
+                        match_id: testMatchId,
+                        sender_id: currentUser.id,
+                        content: '前端测试消息',
+                        message_type: 'text'
+                    }])
+                
+                if (error) {
+                    showResult('realtimeResults', `发送消息失败: ${error.message}`, false)
+                } else {
+                    showResult('realtimeResults', '消息发送成功!', true)
+                }
+            } catch (error) {
+                showResult('realtimeResults', `发送消息异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试 API 性能
+        async function testApiPerformance() {
+            showResult('performanceResults', '开始测试 API 性能...', true)
+            
+            const startTime = performance.now()
+            
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('id, nickname')
+                    .limit(10)
+                
+                const endTime = performance.now()
+                const duration = Math.round(endTime - startTime)
+                
+                if (error) {
+                    showResult('performanceResults', `API 调用失败: ${error.message}`, false)
+                } else {
+                    showResult('performanceResults', `API 调用成功! 耗时: ${duration}ms`, true)
+                }
+            } catch (error) {
+                showResult('performanceResults', `API 性能测试异常: ${error.message}`, false)
+            }
+        }
+        
+        // 测试并发请求
+        async function testConcurrentRequests() {
+            showResult('performanceResults', '开始测试并发请求...', true)
+            
+            try {
+                const requests = Array.from({ length: 5 }, (_, i) => 
+                    supabase.from('profiles').select('id').limit(1)
+                )
+                
+                const startTime = performance.now()
+                const results = await Promise.all(requests)
+                const endTime = performance.now()
+                const duration = Math.round(endTime - startTime)
+                
+                const successful = results.filter(r => !r.error).length
+                
+                showResult('performanceResults', 
+                    `并发测试完成! 成功: ${successful}/5, 总耗时: ${duration}ms`, 
+                    successful === 5
+                )
+                
+            } catch (error) {
+                showResult('performanceResults', `并发测试异常: ${error.message}`, false)
+            }
+        }
+        
+        // 页面加载时检查 API 状态
+        document.addEventListener('DOMContentLoaded', () => {
+            checkApiStatus()
+        })
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase配置 - 新项目
+// Supabase配置
 const supabaseUrl = 'https://nanhthqbcmqxqlqazevm.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbmh0aHFiY21xeHFscWF6ZXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNTQzNTQsImV4cCI6MjA3NjgzMDM1NH0.5UkguCPOX6xm9WqZRPFwcMVZS0Lxgc4mVm9vpzoaD1w'
 
@@ -143,24 +143,41 @@ export const profileApi = {
 
 // 球局相关操作
 export const matchApi = {
-  // 获取球局列表
+  // 获取球局列表（优化查询性能）
   async getMatches(filters = {}) {
-    let query = supabase
-      .from('matches')
-      .select(`
-        *,
-        creator:profiles!matches_creator_id_fkey(nickname, avatar, pickleball_level, tennis_level, badminton_level),
-        participants:match_participants!inner(participant:profiles!match_participants_participant_id_fkey(nickname, avatar))
-      `)
-      .order('created_at', { ascending: false })
+    try {
+      let query = supabase
+        .from('matches')
+        .select(`
+          *,
+          creator:profiles!matches_creator_id_fkey(nickname, avatar, pickleball_level, tennis_level, badminton_level),
+          participants:match_participants(participant:profiles!match_participants_participant_id_fkey(nickname, avatar))
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
 
-    // 应用筛选条件
-    if (filters.sport) {
-      query = query.eq('sport', filters.sport)
+      // 应用筛选条件
+      if (filters.sport) {
+        query = query.eq('sport', filters.sport)
+      }
+      if (filters.date) {
+        const startDate = new Date(filters.date)
+        const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+        query = query.gte('time', startDate.toISOString()).lt('time', endDate.toISOString())
+      }
+
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('获取球局列表失败:', error)
+        return { data: null, error }
+      }
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('获取球局列表异常:', error)
+      return { data: null, error: new Error('获取球局列表失败') }
     }
-
-    const { data, error } = await query
-    return { data, error }
   },
 
   // 创建球局
@@ -172,20 +189,38 @@ export const matchApi = {
     return { data, error }
   },
 
-  // 获取球局详情
+  // 获取球局详情（包含参与者信息）
   async getMatchDetail(matchId) {
-    const { data, error } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        creator:profiles!matches_creator_id_fkey(*),
-        participants:match_participants(
-          participant:profiles!match_participants_participant_id_fkey(*)
-        )
-      `)
-      .eq('id', matchId)
-      .single()
-    return { data, error }
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          creator:profiles!matches_creator_id_fkey(*),
+          participants:match_participants(
+            participant:profiles!match_participants_participant_id_fkey(*)
+          ),
+          messages:messages!messages_match_id_fkey(
+            id,
+            content,
+            message_type,
+            created_at,
+            sender:profiles!messages_sender_id_fkey(nickname, avatar)
+          )
+        `)
+        .eq('id', matchId)
+        .single()
+      
+      if (error) {
+        console.error('获取球局详情失败:', error)
+        return { data: null, error }
+      }
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('获取球局详情异常:', error)
+      return { data: null, error: new Error('获取球局详情失败') }
+    }
   },
 
   // 加入球局
@@ -198,12 +233,183 @@ export const matchApi = {
 
   // 退出球局
   async leaveMatch(matchId, userId) {
-    const { error } = await supabase
-      .from('match_participants')
-      .delete()
-      .eq('match_id', matchId)
-      .eq('participant_id', userId)
-    return { error }
+    try {
+      const { error } = await supabase
+        .from('match_participants')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('participant_id', userId)
+      
+      if (error) {
+        console.error('退出球局失败:', error)
+        return { error }
+      }
+      
+      return { error: null }
+    } catch (error) {
+      console.error('退出球局异常:', error)
+      return { error: new Error('退出球局失败') }
+    }
+  },
+
+  // 检查用户是否已加入球局
+  async checkUserJoined(matchId, userId) {
+    try {
+      const { data, error } = await supabase
+        .from('match_participants')
+        .select('id')
+        .eq('match_id', matchId)
+        .eq('participant_id', userId)
+        .single()
+      
+      return { isJoined: !!data, error }
+    } catch (error) {
+      return { isJoined: false, error: null }
+    }
+  }
+}
+
+// 实时订阅功能
+export const realtimeApi = {
+  // 订阅球局变化
+  subscribeToMatches(callback) {
+    return supabase
+      .channel('matches')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'matches' }, 
+        callback
+      )
+      .subscribe()
+  },
+
+  // 订阅球局参与者变化
+  subscribeToParticipants(matchId, callback) {
+    return supabase
+      .channel(`match-${matchId}`)
+      .on('postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'match_participants',
+          filter: `match_id=eq.${matchId}`
+        },
+        callback
+      )
+      .subscribe()
+  },
+
+  // 订阅球局消息
+  subscribeToMessages(matchId, callback) {
+    return supabase
+      .channel(`messages-${matchId}`)
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `match_id=eq.${matchId}`
+        },
+        callback
+      )
+      .subscribe()
+  }
+}
+
+// 消息相关操作
+export const messageApi = {
+  // 发送消息
+  async sendMessage(matchId, senderId, content, messageType = 'text') {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([{
+          match_id: matchId,
+          sender_id: senderId,
+          content: content,
+          message_type: messageType
+        }])
+        .select()
+      
+      if (error) {
+        console.error('发送消息失败:', error)
+        return { data: null, error }
+      }
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('发送消息异常:', error)
+      return { data: null, error: new Error('发送消息失败') }
+    }
+  },
+
+  // 获取球局消息历史
+  async getMessages(matchId, limit = 50) {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(nickname, avatar)
+        `)
+        .eq('match_id', matchId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.error('获取消息失败:', error)
+        return { data: null, error }
+      }
+      
+      return { data: data.reverse(), error: null }
+    } catch (error) {
+      console.error('获取消息异常:', error)
+      return { data: null, error: new Error('获取消息失败') }
+    }
+  }
+}
+
+// 通知相关操作
+export const notificationApi = {
+  // 获取用户通知
+  async getNotifications(userId, limit = 20) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.error('获取通知失败:', error)
+        return { data: null, error }
+      }
+      
+      return { data, error: null }
+    } catch (error) {
+      console.error('获取通知异常:', error)
+      return { data: null, error: new Error('获取通知失败') }
+    }
+  },
+
+  // 标记通知为已读
+  async markAsRead(notificationId) {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+      
+      if (error) {
+        console.error('标记通知失败:', error)
+        return { error }
+      }
+      
+      return { error: null }
+    } catch (error) {
+      console.error('标记通知异常:', error)
+      return { error: new Error('标记通知失败') }
+    }
   }
 }
 
