@@ -8,6 +8,11 @@
     />
 
     <div class="content" v-if="userInfo">
+      <!-- 加载状态 -->
+      <div v-if="isLoading" class="loading-container">
+        <van-loading size="24px" vertical>加载中...</van-loading>
+      </div>
+      
       <!-- 用户基本信息 -->
       <div class="user-basic-info">
         <van-image
@@ -73,37 +78,94 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMatchStore } from '../stores/match'
+import { useUserStore } from '../stores/user'
+import { profileApi } from '../utils/supabase'
 import { getSportColor, getLevelColor } from '../utils/colors'
+import { 
+  NavBar as VanNavBar,
+  Image as VanImage,
+  Loading as VanLoading
+} from 'vant'
 
 const route = useRoute()
 const router = useRouter()
 const matchStore = useMatchStore()
+const userStore = useUserStore()
 
 const userInfo = ref(null)
 const userMatches = ref([])
+const isLoading = ref(false)
 
-// 获取用户信息（这里需要根据实际API调整）
-const loadUserInfo = (userId) => {
-  // 模拟用户数据
-  userInfo.value = {
-    id: userId,
-    nickname: '球友' + userId,
-    avatar: '',
-    bio: '热爱运动的球友',
-    sports: [
-      { name: '匹克球', level: '进阶' },
-      { name: '网球', level: '初级' },
-      { name: '羽毛球', level: '专业' }
-    ]
+// 获取用户信息
+const loadUserInfo = async (userId) => {
+  try {
+    isLoading.value = true
+    
+    // 如果是当前用户，使用store中的数据
+    if (userId === userStore.userInfo.id) {
+      userInfo.value = {
+        id: userStore.userInfo.id,
+        nickname: userStore.userInfo.nickname,
+        avatar: userStore.userInfo.avatar,
+        bio: userStore.userInfo.bio,
+        sports: [
+          { name: '匹克球', level: userStore.userInfo.pickleballLevel || '未设置' },
+          { name: '网球', level: userStore.userInfo.tennisLevel || '未设置' },
+          { name: '羽毛球', level: userStore.userInfo.badmintonLevel || '未设置' }
+        ]
+      }
+    } else {
+      // 如果是其他用户，从API获取数据
+      const { data: profile, error } = await profileApi.getUserProfile(userId)
+      if (error) throw error
+      
+      if (profile) {
+        userInfo.value = {
+          id: profile.id,
+          nickname: profile.nickname,
+          avatar: profile.avatar,
+          bio: profile.bio,
+          sports: [
+            { name: '匹克球', level: profile.pickleball_level || '未设置' },
+            { name: '网球', level: profile.tennis_level || '未设置' },
+            { name: '羽毛球', level: profile.badminton_level || '未设置' }
+          ]
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    // 如果获取失败，显示默认数据
+    userInfo.value = {
+      id: userId,
+      nickname: '球友' + userId,
+      avatar: '',
+      bio: '热爱运动的球友',
+      sports: [
+        { name: '匹克球', level: '未设置' },
+        { name: '网球', level: '未设置' },
+        { name: '羽毛球', level: '未设置' }
+      ]
+    }
+  } finally {
+    isLoading.value = false
   }
 }
 
 // 获取用户参与的球局
-const loadUserMatches = (userId) => {
-  const allMatches = matchStore.getFilteredMatches()
-  userMatches.value = allMatches.filter(match => 
-    match.participants.some(p => p.id === userId)
-  )
+const loadUserMatches = async (userId) => {
+  try {
+    // 先确保球局列表已加载
+    await matchStore.loadMatches()
+    const allMatches = matchStore.matchList
+    
+    userMatches.value = allMatches.filter(match => 
+      match.participants.some(p => p.id === userId)
+    )
+  } catch (error) {
+    console.error('获取用户球局失败:', error)
+    userMatches.value = []
+  }
 }
 
 // 格式化时间

@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase配置
-const supabaseUrl = 'https://nanhthqbcmqxqlqazevm.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbmh0aHFiY21xeHFscWF6ZXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNTQzNTQsImV4cCI6MjA3NjgzMDM1NH0.5UkguCPOX6xm9WqZRPFwcMVZS0Lxgc4mVm9vpzoaD1w'
+// Supabase配置 - 支持环境变量和硬编码回退
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nanhthqbcmqxqlqazevm.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hbmh0aHFiY21xeHFscWF6ZXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNTQzNTQsImV4cCI6MjA3NjgzMDM1NH0.5UkguCPOX6xm9WqZRPFwcMVZS0Lxgc4mVm9vpzoaD1w'
+
+// 验证配置
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase配置错误: 缺少URL或API密钥')
+}
 
 // 创建Supabase客户端
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

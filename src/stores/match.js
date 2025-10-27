@@ -237,6 +237,11 @@ export const useMatchStore = defineStore('match', () => {
         throw error
       }
       
+      if (!data) {
+        errorMessage.value = '球局不存在'
+        throw new Error('球局不存在')
+      }
+      
       return {
         success: true,
         data: {
@@ -248,17 +253,17 @@ export const useMatchStore = defineStore('match', () => {
           maxPlayers: data.max_players,
           currentPlayers: data.participants?.length || 1,
           creator: {
-            id: data.creator.id,
-            nickname: data.creator.nickname,
-            avatar: data.creator.avatar,
-            level: data.creator.pickleball_level || data.creator.tennis_level || data.creator.badminton_level || '初级'
+            id: data.creator?.id || 'unknown',
+            nickname: data.creator?.nickname || '未知用户',
+            avatar: data.creator?.avatar || '',
+            level: data.creator?.pickleball_level || data.creator?.tennis_level || data.creator?.badminton_level || '初级'
           },
           description: data.description,
           participants: data.participants?.map(p => ({
-            id: p.participant.id,
-            nickname: p.participant.nickname,
-            avatar: p.participant.avatar,
-            level: p.participant.pickleball_level || p.participant.tennis_level || p.participant.badminton_level || '初级'
+            id: p.participant?.id || 'unknown',
+            nickname: p.participant?.nickname || '未知用户',
+            avatar: p.participant?.avatar || '',
+            level: p.participant?.pickleball_level || p.participant?.tennis_level || p.participant?.badminton_level || '初级'
           })) || []
         }
       }

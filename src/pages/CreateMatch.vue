@@ -151,7 +151,7 @@ import {
   Popup as VanPopup,
   Picker as VanPicker,
   Button as VanButton,
-  Slider as VanSlider
+  Stepper as VanStepper
 } from 'vant'
 
 const router = useRouter()
@@ -175,7 +175,7 @@ const showPlayerPicker = ref(false)
 
 // 临时数据
 const tempPlayerCount = ref(4)
-const tempTime = ref('')
+const tempTime = ref(new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16))
 
 // 选项数据
 const sportOptions = ['匹克球', '网球', '羽毛球']
@@ -222,6 +222,7 @@ const confirmTime = () => {
     const defaultTime = new Date()
     defaultTime.setHours(defaultTime.getHours() + 1)
     form.time = defaultTime.toISOString().slice(0, 16)
+    tempTime.value = form.time
   }
   showTimePicker.value = false
 }
@@ -249,9 +250,23 @@ const onSubmit = async () => {
     return
   }
 
+  // 游客模式下不允许创建球局
+  if (userStore.isGuestMode) {
+    showToast('游客模式下无法创建球局，请注册账号后使用完整功能')
+    return
+  }
+
   // 验证必填字段
   if (!form.title || !form.sport || !form.time || !form.location || !form.maxPlayers) {
     showToast('请完善所有必填信息')
+    return
+  }
+
+  // 验证时间是否有效
+  const selectedTime = new Date(form.time)
+  const currentTime = new Date()
+  if (selectedTime <= currentTime) {
+    showToast('请选择未来的时间')
     return
   }
 
@@ -280,8 +295,9 @@ const onSubmit = async () => {
       })
     }
   } catch (error) {
+    console.error('创建球局异常:', error)
     showToast({
-      message: '创建失败，请重试',
+      message: '创建失败，请检查网络连接后重试',
       type: 'fail'
     })
   }
