@@ -77,6 +77,11 @@ export const useMatchStore = defineStore('match', () => {
         throw new Error('请先登录后再创建球局')
       }
       
+      // 游客模式下不允许创建球局
+      if (userStore.isGuestMode) {
+        throw new Error('游客模式下无法创建球局，请注册账号后使用完整功能')
+      }
+      
       // 确保时间格式正确（转换为ISO字符串）
       const matchTime = new Date(matchData.time).toISOString()
       
@@ -118,6 +123,11 @@ export const useMatchStore = defineStore('match', () => {
         throw new Error('请先登录后再加入球局')
       }
       
+      // 游客模式下不允许加入球局
+      if (userStore.isGuestMode) {
+        throw new Error('游客模式下无法加入球局，请注册账号后使用完整功能')
+      }
+      
       const { error } = await matchApi.joinMatch(matchId, userStore.userInfo.id)
       if (error) {
         errorMessage.value = '加入球局失败，请检查网络连接'
@@ -136,6 +146,52 @@ export const useMatchStore = defineStore('match', () => {
     }
   }
 
+  // 游客模式下的球局浏览（只读）
+  const browseMatches = async () => {
+    try {
+      isLoading.value = true
+      errorMessage.value = ''
+      
+      const { data, error } = await matchApi.getMatches(filter.value)
+      if (error) {
+        errorMessage.value = '加载球局失败，请检查网络连接'
+        throw error
+      }
+      
+      // 转换数据格式，但标记为只读模式
+      matchList.value = data.map(match => ({
+        id: match.id,
+        title: match.title,
+        sport: match.sport,
+        time: match.time,
+        location: match.location,
+        maxPlayers: match.max_players,
+        currentPlayers: match.participants?.length || 1,
+        creator: {
+          id: match.creator.id,
+          nickname: match.creator.nickname,
+          avatar: match.creator.avatar,
+          level: match.creator.pickleball_level || match.creator.tennis_level || match.creator.badminton_level || '初级'
+        },
+        description: match.description,
+        participants: match.participants?.map(p => ({
+          id: p.participant.id,
+          nickname: p.participant.nickname,
+          avatar: p.participant.avatar,
+          level: p.participant.pickleball_level || p.participant.tennis_level || p.participant.badminton_level || '初级'
+        })) || [],
+        isReadOnly: true // 标记为只读模式
+      }))
+      
+      return { success: true }
+    } catch (error) {
+      console.error('浏览球局失败:', error)
+      return { success: false, error: errorMessage.value || '浏览球局失败' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // 退出球局
   const leaveMatch = async (matchId) => {
     try {
@@ -144,6 +200,11 @@ export const useMatchStore = defineStore('match', () => {
       
       if (!userStore.isLoggedIn) {
         throw new Error('请先登录后再退出球局')
+      }
+      
+      // 游客模式下不允许退出球局
+      if (userStore.isGuestMode) {
+        throw new Error('游客模式下无法退出球局')
       }
       
       const { error } = await matchApi.leaveMatch(matchId, userStore.userInfo.id)
@@ -239,6 +300,7 @@ export const useMatchStore = defineStore('match', () => {
     isLoading,
     errorMessage,
     loadMatches,
+    browseMatches,
     createMatch,
     joinMatch,
     leaveMatch,

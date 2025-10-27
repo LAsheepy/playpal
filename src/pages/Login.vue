@@ -37,6 +37,28 @@
           {{ isLogin ? '没有账号？立即注册' : '已有账号？立即登录' }}
         </span>
       </div>
+      
+      <!-- 游客登录入口 -->
+      <div class="guest-login-section">
+        <div class="divider">
+          <span>或</span>
+        </div>
+        <div style="margin: 16px;">
+          <van-button 
+            round 
+            block 
+            type="default" 
+            @click="onGuestLogin"
+            class="guest-login-btn"
+          >
+            🎯 游客体验
+          </van-button>
+        </div>
+        <div class="guest-notice">
+          <p>💡 无需注册，立即体验系统核心功能</p>
+          <p>⚠️ 游客模式下数据不会保存</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -110,6 +132,33 @@ const onSubmit = async () => {
     })
   }
 }
+
+// 游客登录
+const onGuestLogin = async () => {
+  try {
+    const result = await userStore.guestLogin()
+    if (result.success) {
+      showToast({
+        message: '游客模式已开启',
+        type: 'success'
+      })
+      // 跳转到首页
+      setTimeout(() => {
+        router.push('/home')
+      }, 1000)
+    } else {
+      showToast({
+        message: result.error || '游客登录失败',
+        type: 'fail'
+      })
+    }
+  } catch (error) {
+    showToast({
+      message: '游客登录失败，请重试',
+      type: 'fail'
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -157,5 +206,56 @@ const onSubmit = async () => {
 .switch-mode span {
   color: #1989fa;
   cursor: pointer;
+}
+
+/* 游客登录样式 */
+.guest-login-section {
+  margin-top: 30px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 20px;
+}
+
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #f0f0f0;
+  z-index: 1;
+}
+
+.divider span {
+  background: white;
+  padding: 0 15px;
+  color: #999;
+  font-size: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.guest-login-btn {
+  border: 1px solid #1989fa;
+  color: #1989fa;
+  background: white;
+}
+
+.guest-notice {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.guest-notice p {
+  margin: 5px 0;
 }
 </style>

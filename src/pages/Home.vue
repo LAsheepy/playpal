@@ -1,5 +1,16 @@
 <template>
   <div class="home-container">
+    <!-- 游客模式标识 -->
+    <div v-if="userStore.isGuestMode" class="guest-mode-banner">
+      <van-notice-bar
+        left-icon="info-o"
+        background="#fff3cd"
+        color="#856404"
+      >
+        🎯 游客体验模式 - 您可以浏览球局，但无法创建或加入球局
+      </van-notice-bar>
+    </div>
+
     <!-- 搜索和筛选区域 -->
     <div class="filter-section">
       <van-search
@@ -100,7 +111,8 @@ import {
   List as VanList,
   Icon as VanIcon,
   Image as VanImage,
-  FloatingBubble as VanFloatingBubble
+  FloatingBubble as VanFloatingBubble,
+  NoticeBar as VanNoticeBar
 } from 'vant'
 import { getSportColor, getLevelColor } from '../utils/colors'
 
@@ -190,7 +202,14 @@ const onLoad = () => {
 
 // 跳转到球局详情
 const goToMatchDetail = (matchId) => {
-  router.push(`/match/${matchId}`)
+  // 游客模式下显示提示信息
+  if (userStore.isGuestMode) {
+    // 这里可以添加一个提示，告诉用户需要注册才能查看详情
+    // 暂时先允许查看详情，但会在详情页面限制操作
+    router.push(`/match/${matchId}`)
+  } else {
+    router.push(`/match/${matchId}`)
+  }
 }
 
 // 跳转到创建球局
@@ -199,13 +218,32 @@ const goToCreate = () => {
     router.push('/login')
     return
   }
+  
+  // 游客模式下显示提示
+  if (userStore.isGuestMode) {
+    // 这里可以添加一个提示对话框
+    // 暂时先跳转到登录页面，提示用户注册
+    router.push('/login')
+    return
+  }
+  
   router.push('/create')
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {
     router.push('/login')
+    return
+  }
+  
+  // 根据用户模式加载不同的数据
+  if (userStore.isGuestMode) {
+    // 游客模式下使用浏览模式
+    await matchStore.browseMatches()
+  } else {
+    // 正式用户使用正常模式
+    await matchStore.loadMatches()
   }
 })
 </script>
@@ -312,5 +350,12 @@ onMounted(() => {
 .players-count {
   font-size: 14px;
   color: #999;
+}
+
+/* 游客模式标识样式 */
+.guest-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 </style>

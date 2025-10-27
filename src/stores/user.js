@@ -20,6 +20,9 @@ export const useUserStore = defineStore('user', () => {
   // 登录状态
   const isLoggedIn = ref(false)
   
+  // 游客模式
+  const isGuestMode = ref(false)
+  
   // 加载状态
   const isLoading = ref(false)
   
@@ -31,6 +34,27 @@ export const useUserStore = defineStore('user', () => {
     try {
       isLoading.value = true
       errorMessage.value = ''
+      
+      // 检查是否为游客模式
+      const isGuestModeStored = localStorage.getItem('isGuestMode') === 'true'
+      if (isGuestModeStored) {
+        isGuestMode.value = true
+        isLoggedIn.value = true
+        // 恢复游客用户信息
+        userInfo.value = {
+          id: 'guest_' + Date.now(),
+          email: 'guest@playpal.com',
+          nickname: '体验用户' + Math.floor(Math.random() * 1000),
+          avatar: '',
+          age: 25,
+          gender: '未知',
+          pickleballLevel: '初级',
+          tennisLevel: '初级',
+          badmintonLevel: '初级',
+          bio: '我是体验用户，正在测试系统功能'
+        }
+        return
+      }
       
       const user = await authApi.getCurrentUser()
       if (user) {
@@ -185,14 +209,53 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 游客登录
+  const guestLogin = async () => {
+    try {
+      isLoading.value = true
+      errorMessage.value = ''
+      
+      // 创建游客用户信息
+      const guestId = 'guest_' + Date.now()
+      userInfo.value = {
+        id: guestId,
+        email: 'guest@playpal.com',
+        nickname: '体验用户' + Math.floor(Math.random() * 1000),
+        avatar: '',
+        age: 25,
+        gender: '未知',
+        pickleballLevel: '初级',
+        tennisLevel: '初级',
+        badmintonLevel: '初级',
+        bio: '我是体验用户，正在测试系统功能'
+      }
+      
+      isLoggedIn.value = true
+      isGuestMode.value = true
+      localStorage.setItem('isLoggedIn', 'true')
+      localStorage.setItem('isGuestMode', 'true')
+      
+      return { success: true }
+    } catch (error) {
+      console.error('游客登录失败:', error)
+      errorMessage.value = '游客登录失败，请稍后重试'
+      return { success: false, error: errorMessage.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // 退出登录
   const logout = async () => {
     try {
       isLoading.value = true
       errorMessage.value = ''
       
-      const { error } = await authApi.signOut()
-      if (error) throw error
+      // 如果是游客模式，不需要调用后端登出
+      if (!isGuestMode.value) {
+        const { error } = await authApi.signOut()
+        if (error) throw error
+      }
       
       userInfo.value = {
         id: null,
@@ -207,7 +270,9 @@ export const useUserStore = defineStore('user', () => {
         bio: ''
       }
       isLoggedIn.value = false
+      isGuestMode.value = false
       localStorage.removeItem('isLoggedIn')
+      localStorage.removeItem('isGuestMode')
       
       return { success: true }
     } catch (error) {
@@ -266,10 +331,12 @@ export const useUserStore = defineStore('user', () => {
   return {
     userInfo,
     isLoggedIn,
+    isGuestMode,
     isLoading,
     errorMessage,
     login,
     register,
+    guestLogin,
     logout,
     updateUserInfo,
     clearError,
