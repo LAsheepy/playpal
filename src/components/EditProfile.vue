@@ -25,7 +25,7 @@
             clickable
             name="gender"
             label="性别"
-            :value="form.gender"
+            v-model="form.gender"
             placeholder="请选择性别"
             @click="showGenderPicker = true"
           />
@@ -56,7 +56,7 @@
               <van-field
                 readonly
                 clickable
-                :value="form.pickleballLevel || '请选择水平'"
+                v-model="form.pickleballLevel"
                 placeholder="请选择水平"
                 @click="showPickleballPicker = true"
               />
@@ -68,7 +68,7 @@
               <van-field
                 readonly
                 clickable
-                :value="form.tennisLevel || '请选择水平'"
+                v-model="form.tennisLevel"
                 placeholder="请选择水平"
                 @click="showTennisPicker = true"
               />
@@ -80,7 +80,7 @@
               <van-field
                 readonly
                 clickable
-                :value="form.badmintonLevel || '请选择水平'"
+                v-model="form.badmintonLevel"
                 placeholder="请选择水平"
                 @click="showBadmintonPicker = true"
               />
@@ -202,7 +202,9 @@ const badmintonLevelOptions = [
 
 // 选择器确认事件
 const onGenderConfirm = (value) => {
-  form.gender = value.value || value
+  const selectedValue = value.value || value
+  form.gender = selectedValue
+  console.log('性别已选择:', form.gender)
   showGenderPicker.value = false
 }
 
@@ -210,12 +212,15 @@ const onLevelConfirm = (sport, value) => {
   const selectedValue = value.value || value
   if (sport === 'pickleball') {
     form.pickleballLevel = selectedValue
+    console.log('匹克球水平已选择:', form.pickleballLevel)
     showPickleballPicker.value = false
   } else if (sport === 'tennis') {
     form.tennisLevel = selectedValue
+    console.log('网球水平已选择:', form.tennisLevel)
     showTennisPicker.value = false
   } else if (sport === 'badminton') {
     form.badmintonLevel = selectedValue
+    console.log('羽毛球水平已选择:', form.badmintonLevel)
     showBadmintonPicker.value = false
   }
 }

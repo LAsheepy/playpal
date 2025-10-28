@@ -84,7 +84,7 @@ const loading = ref(false)
 const finished = ref(false)
 
 const myMatches = computed(() => {
-  return matchStore.matches.filter(match => 
+  return matchStore.matchList.filter(match => 
     match.creator.id === userStore.userInfo.id
   )
 })
@@ -119,6 +119,25 @@ const formatTime = (time) => {
     minute: '2-digit'
   })
 }
+
+onMounted(async () => {
+  // 检查登录状态
+  if (!userStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
+  
+  try {
+    // 确保球局数据已加载
+    if (userStore.isGuestMode) {
+      await matchStore.browseMatches()
+    } else {
+      await matchStore.loadMatches()
+    }
+  } catch (error) {
+    console.error('加载球局数据失败:', error)
+  }
+})
 
 // 由于数据库中没有status字段，默认显示"进行中"状态
 </script>

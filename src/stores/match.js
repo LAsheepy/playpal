@@ -364,7 +364,11 @@ export const useMatchStore = defineStore('match', () => {
   // 更新筛选条件
   const updateFilter = (newFilter) => {
     filter.value = { ...filter.value, ...newFilter }
-    loadMatches()
+    
+    // 只有在登录状态下才加载数据
+    if (userStore.isLoggedIn && !userStore.isGuestMode) {
+      loadMatches()
+    }
   }
 
   // 获取筛选后的球局列表

@@ -155,6 +155,13 @@ const loadUserInfo = async (userId) => {
 // 获取用户参与的球局
 const loadUserMatches = async (userId) => {
   try {
+    // 检查登录状态
+    if (!userStore.isLoggedIn) {
+      console.log('用户未登录，跳过加载用户球局')
+      userMatches.value = []
+      return
+    }
+    
     // 先确保球局列表已加载
     await matchStore.loadMatches()
     const allMatches = matchStore.matchList

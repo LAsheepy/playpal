@@ -24,7 +24,7 @@
             clickable
             name="sport"
             label="球种"
-            :value="form.sport"
+            v-model="form.sport"
             placeholder="请选择球种"
             @click="showSportPicker = true"
             :rules="[{ required: true, message: '请选择球种' }]"
@@ -245,12 +245,14 @@ const formatDisplayTime = (timeStr) => {
 const confirmTime = () => {
   if (tempTime.value) {
     form.time = tempTime.value
+    console.log('时间已选择:', form.time)
   } else {
     // 如果没有选择时间，设置默认时间为当前时间+1小时
     const defaultTime = new Date()
     defaultTime.setHours(defaultTime.getHours() + 1)
     form.time = defaultTime.toISOString().slice(0, 16)
     tempTime.value = form.time
+    console.log('使用默认时间:', form.time)
   }
   showTimePicker.value = false
 }
@@ -258,6 +260,7 @@ const confirmTime = () => {
 // 确认人数选择
 const confirmPlayerCount = () => {
   form.maxPlayers = tempPlayerCount.value
+  console.log('人数已选择:', form.maxPlayers)
   showPlayerPicker.value = false
 }
 
@@ -265,7 +268,16 @@ const confirmPlayerCount = () => {
 const handleTimeChange = () => {
   if (tempTime.value) {
     form.time = tempTime.value
+    console.log('时间已更新:', form.time)
   }
+}
+
+// 球种确认
+const onSportConfirm = (value) => {
+  const selectedValue = value.value || value
+  form.sport = selectedValue
+  console.log('球种已选择:', form.sport)
+  showSportPicker.value = false
 }
 
 
