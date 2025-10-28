@@ -179,9 +179,9 @@ const tempTime = ref(new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0
 
 // 选项数据
 const sportOptions = [
-  { text: '匹克球', value: '匹克球' },
-  { text: '网球', value: '网球' },
-  { text: '羽毛球', value: '羽毛球' }
+  '匹克球',
+  '网球', 
+  '羽毛球'
 ]
 
 // 获取最小日期时间（当前时间）
@@ -201,8 +201,8 @@ const getMaxDateTime = () => {
 
 // 球种确认
 const onSportConfirm = (value) => {
-  const selectedValue = value.value || value
-  form.sport = selectedValue
+  // 现在选项是简单字符串，直接使用
+  form.sport = value
   console.log('球种已选择:', form.sport)
   showSportPicker.value = false
 }
