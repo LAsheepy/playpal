@@ -234,17 +234,23 @@ const goToCreate = () => {
 onMounted(async () => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {
+    // 未登录时跳转到登录页面
     router.push('/login')
     return
   }
   
-  // 根据用户模式加载不同的数据
-  if (userStore.isGuestMode) {
-    // 游客模式下使用浏览模式
-    await matchStore.browseMatches()
-  } else {
-    // 正式用户使用正常模式
-    await matchStore.loadMatches()
+  try {
+    // 根据用户模式加载不同的数据
+    if (userStore.isGuestMode) {
+      // 游客模式下使用浏览模式
+      await matchStore.browseMatches()
+    } else {
+      // 正式用户使用正常模式
+      await matchStore.loadMatches()
+    }
+  } catch (error) {
+    console.error('加载球局数据失败:', error)
+    // 即使加载失败也不跳转，保持页面显示
   }
 })
 </script>

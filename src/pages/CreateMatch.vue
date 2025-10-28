@@ -207,14 +207,38 @@ const onSportConfirm = (value) => {
 
 // 格式化显示时间
 const formatDisplayTime = (timeStr) => {
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  try {
+    // 处理 datetime-local 格式（YYYY-MM-DDTHH:mm）
+    if (timeStr.includes('T')) {
+      const date = new Date(timeStr)
+      if (isNaN(date.getTime())) {
+        return '时间格式错误'
+      }
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+    
+    // 处理标准 ISO 格式
+    const date = new Date(timeStr)
+    if (isNaN(date.getTime())) {
+      return '时间格式错误'
+    }
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    console.error('时间格式化错误:', error)
+    return '时间格式错误'
+  }
 }
 
 // 确认时间选择

@@ -25,6 +25,13 @@ export const useMatchStore = defineStore('match', () => {
   // 加载球局列表
   const loadMatches = async () => {
     try {
+      // 检查登录状态
+      if (!userStore.isLoggedIn) {
+        console.log('用户未登录，跳过加载球局数据')
+        matchList.value = []
+        return { success: true }
+      }
+      
       isLoading.value = true
       errorMessage.value = ''
       
@@ -375,8 +382,20 @@ export const useMatchStore = defineStore('match', () => {
     errorMessage.value = ''
   }
 
-  // 初始化加载球局
-  loadMatches()
+  // 初始化加载球局（仅在登录状态下）
+  const initMatches = () => {
+    if (userStore.isLoggedIn && !userStore.isGuestMode) {
+      loadMatches()
+    }
+  }
+  
+  // 监听登录状态变化
+  const initUserListener = () => {
+    // 这里可以添加对用户状态变化的监听
+    // 当用户登录状态改变时重新加载数据
+  }
+  
+  initMatches()
 
   return {
     matchList,
