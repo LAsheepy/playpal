@@ -35,6 +35,7 @@
               :columns="sportOptions"
               @confirm="onSportConfirm"
               @cancel="showSportPicker = false"
+              value-key="text"
             />
           </van-popup>
         </van-cell-group>
