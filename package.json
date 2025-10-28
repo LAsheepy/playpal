@@ -10,8 +10,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
-    "axios": "^1.6.0",
+    "axios": "^1.13.0",
     "pinia": "^2.1.7",
+    "playwright": "^1.56.1",
     "vant": "^4.8.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"
