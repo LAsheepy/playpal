@@ -201,7 +201,9 @@ const getMaxDateTime = () => {
 
 // 球种确认
 const onSportConfirm = (value) => {
-  form.sport = value.value || value
+  const selectedValue = value.value || value
+  form.sport = selectedValue
+  console.log('球种已选择:', form.sport)
   showSportPicker.value = false
 }
 
@@ -270,14 +272,6 @@ const handleTimeChange = () => {
     form.time = tempTime.value
     console.log('时间已更新:', form.time)
   }
-}
-
-// 球种确认
-const onSportConfirm = (value) => {
-  const selectedValue = value.value || value
-  form.sport = selectedValue
-  console.log('球种已选择:', form.sport)
-  showSportPicker.value = false
 }
 
 
