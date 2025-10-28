@@ -123,7 +123,6 @@ class PerformanceTester {
           creator:profiles!matches_creator_id_fkey(nickname, avatar),
           participants:match_participants(participant:profiles!match_participants_participant_id_fkey(nickname))
         `)
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(20)
       if (error) throw error

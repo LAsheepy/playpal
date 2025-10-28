@@ -30,34 +30,53 @@ export const useMatchStore = defineStore('match', () => {
       
       const { data, error } = await matchApi.getMatches(filter.value)
       if (error) {
+        console.error('API调用错误:', error)
         errorMessage.value = '加载球局失败，请检查网络连接'
         throw error
       }
       
-      // 转换数据格式
-      matchList.value = data.map(match => ({
-        id: match.id,
-        title: match.title,
-        sport: match.sport,
-        time: match.time,
-        location: match.location,
-        maxPlayers: match.max_players,
-        currentPlayers: match.participants?.length || 1,
-        creator: {
-          id: match.creator.id,
-          nickname: match.creator.nickname,
-          avatar: match.creator.avatar,
-          level: match.creator.pickleball_level || match.creator.tennis_level || match.creator.badminton_level || '初级'
-        },
-        description: match.description,
-        participants: match.participants?.map(p => ({
-          id: p.participant.id,
-          nickname: p.participant.nickname,
-          avatar: p.participant.avatar,
-          level: p.participant.pickleball_level || p.participant.tennis_level || p.participant.badminton_level || '初级'
-        })) || []
-      }))
+      // 检查数据是否为空
+      if (!data || data.length === 0) {
+        console.log('没有找到球局数据，表可能为空')
+        matchList.value = []
+        return { success: true }
+      }
       
+      // 转换数据格式，添加空值检查
+      matchList.value = data.map(match => {
+        // 确保creator对象存在
+        const creator = match.creator || {}
+        // 确保participants数组存在
+        const participants = match.participants || []
+        
+        return {
+          id: match.id,
+          title: match.title,
+          sport: match.sport,
+          time: match.time,
+          location: match.location,
+          maxPlayers: match.max_players,
+          currentPlayers: participants.length || 1,
+          creator: {
+            id: creator.id || 'unknown',
+            nickname: creator.nickname || '未知用户',
+            avatar: creator.avatar || '',
+            level: creator.pickleball_level || creator.tennis_level || creator.badminton_level || '初级'
+          },
+          description: match.description || '',
+          participants: participants.map(p => {
+            const participant = p.participant || {}
+            return {
+              id: participant.id || 'unknown',
+              nickname: participant.nickname || '未知用户',
+              avatar: participant.avatar || '',
+              level: participant.pickleball_level || participant.tennis_level || participant.badminton_level || '初级'
+            }
+          })
+        }
+      })
+      
+      console.log('成功加载球局数据:', matchList.value.length)
       return { success: true }
     } catch (error) {
       console.error('加载球局失败:', error)

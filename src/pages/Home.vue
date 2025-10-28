@@ -180,6 +180,7 @@ const onSearch = () => {
 // 筛选变化
 const onFilterChange = (index) => {
   const sport = filterOptions[index]
+  console.log('筛选运动类型:', sport)
   matchStore.updateFilter({ sport })
 }
 

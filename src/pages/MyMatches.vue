@@ -50,8 +50,8 @@
             </div>
             
             <div class="match-status">
-              <van-tag :type="getStatusType(match.status)">
-                {{ getStatusText(match.status) }}
+              <van-tag type="primary">
+                进行中
               </van-tag>
             </div>
           </div>
@@ -120,23 +120,7 @@ const formatTime = (time) => {
   })
 }
 
-const getStatusType = (status) => {
-  const types = {
-    '进行中': 'primary',
-    '已结束': 'danger',
-    '已取消': 'default'
-  }
-  return types[status] || 'default'
-}
-
-const getStatusText = (status) => {
-  const texts = {
-    'active': '进行中',
-    'ended': '已结束',
-    'cancelled': '已取消'
-  }
-  return texts[status] || status
-}
+// 由于数据库中没有status字段，默认显示"进行中"状态
 </script>
 
 <style scoped>

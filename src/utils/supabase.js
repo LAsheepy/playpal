@@ -158,7 +158,6 @@ export const matchApi = {
           creator:profiles!matches_creator_id_fkey(nickname, avatar, pickleball_level, tennis_level, badminton_level),
           participants:match_participants(participant:profiles!match_participants_participant_id_fkey(nickname, avatar))
         `)
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
 
       // 应用筛选条件
@@ -187,11 +186,25 @@ export const matchApi = {
 
   // 创建球局
   async createMatch(matchData) {
-    const { data, error } = await supabase
-      .from('matches')
-      .insert([matchData])
-      .select()
-    return { data, error }
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .insert([matchData])
+        .select()
+      
+      if (error) {
+        console.error('创建球局API错误:', error)
+        // 如果是RLS错误，提供更友好的提示
+        if (error.message.includes('row-level security')) {
+          return { data: null, error: new Error('没有权限创建球局，请检查登录状态') }
+        }
+      }
+      
+      return { data, error }
+    } catch (error) {
+      console.error('创建球局异常:', error)
+      return { data: null, error }
+    }
   },
 
   // 获取球局详情（包含参与者信息）

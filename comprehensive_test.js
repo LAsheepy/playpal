@@ -181,7 +181,6 @@ class PlayPalTester {
           creator:profiles!matches_creator_id_fkey(nickname, avatar),
           participants:match_participants(participant:profiles!match_participants_participant_id_fkey(nickname))
         `)
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
       
       if (listError) throw listError
