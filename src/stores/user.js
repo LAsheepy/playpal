@@ -290,31 +290,122 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = true
       errorMessage.value = ''
       
+      // 验证用户登录状态
       if (!userInfo.value.id) {
-        throw new Error('用户未登录')
+        errorMessage.value = '用户未登录'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证必填字段
+      if (!info.nickname || info.nickname.trim().length === 0) {
+        errorMessage.value = '昵称不能为空'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证昵称长度
+      if (info.nickname.length < 2 || info.nickname.length > 20) {
+        errorMessage.value = '昵称长度应在2-20个字符之间'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证昵称格式
+      const nicknameRegex = /^[\u4e00-\u9fa5a-zA-Z0-9_]+$/
+      if (!nicknameRegex.test(info.nickname)) {
+        errorMessage.value = '昵称只能包含中文、英文、数字和下划线'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证年龄
+      if (info.age) {
+        const age = parseInt(info.age)
+        if (isNaN(age) || age < 1 || age > 100) {
+          errorMessage.value = '年龄必须在1-100之间'
+          throw new Error(errorMessage.value)
+        }
+      }
+      
+      // 验证性别
+      if (info.gender && !['男', '女'].includes(info.gender)) {
+        errorMessage.value = '请选择有效的性别'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证运动水平
+      const validLevels = {
+        pickleball: ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+'],
+        tennis: ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+'],
+        badminton: ['初级', '进阶', '专业']
+      }
+      
+      if (info.pickleballLevel && !validLevels.pickleball.includes(info.pickleballLevel)) {
+        errorMessage.value = '请选择有效的匹克球水平'
+        throw new Error(errorMessage.value)
+      }
+      
+      if (info.tennisLevel && !validLevels.tennis.includes(info.tennisLevel)) {
+        errorMessage.value = '请选择有效的网球水平'
+        throw new Error(errorMessage.value)
+      }
+      
+      if (info.badmintonLevel && !validLevels.badminton.includes(info.badmintonLevel)) {
+        errorMessage.value = '请选择有效的羽毛球水平'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证个人简介长度
+      if (info.bio && info.bio.length > 100) {
+        errorMessage.value = '个人简介长度不能超过100个字符'
+        throw new Error(errorMessage.value)
       }
       
       // 映射前端字段到数据库字段
       const dbInfo = {
-        nickname: info.nickname,
-        age: info.age,
-        gender: info.gender,
-        pickleball_level: info.pickleballLevel,
-        tennis_level: info.tennisLevel,
-        badminton_level: info.badmintonLevel,
-        bio: info.bio
+        nickname: info.nickname.trim(),
+        age: info.age ? parseInt(info.age) : null,
+        gender: info.gender || null,
+        pickleball_level: info.pickleballLevel || null,
+        tennis_level: info.tennisLevel || null,
+        badminton_level: info.badmintonLevel || null,
+        bio: info.bio ? info.bio.trim() : null
       }
       
       const { error } = await profileApi.updateUserProfile(userInfo.value.id, dbInfo)
-      if (error) throw error
+      if (error) {
+        console.error('更新用户资料API错误:', error)
+        
+        // 根据错误类型提供更友好的提示
+        if (error.message.includes('row-level security')) {
+          errorMessage.value = '没有权限更新资料，请检查登录状态'
+        } else if (error.message.includes('network') || error.message.includes('Network')) {
+          errorMessage.value = '网络连接失败，请检查网络设置'
+        } else if (error.message.includes('profiles')) {
+          errorMessage.value = '用户资料不存在，请重新登录'
+        } else {
+          errorMessage.value = '更新资料失败，请稍后重试'
+        }
+        
+        throw error
+      }
       
-      userInfo.value = { ...userInfo.value, ...info }
+      // 更新本地用户信息
+      userInfo.value = { 
+        ...userInfo.value, 
+        nickname: dbInfo.nickname,
+        age: dbInfo.age,
+        gender: dbInfo.gender,
+        pickleballLevel: dbInfo.pickleball_level,
+        tennisLevel: dbInfo.tennis_level,
+        badmintonLevel: dbInfo.badminton_level,
+        bio: dbInfo.bio
+      }
       
       return { success: true }
     } catch (error) {
       console.error('更新用户信息失败:', error)
-      errorMessage.value = error || '更新用户信息失败，请稍后重试'
-      return { success: false, error: errorMessage.value }
+      return { 
+        success: false, 
+        error: errorMessage.value || error.message || '更新用户信息失败，请稍后重试' 
+      }
     } finally {
       isLoading.value = false
     }

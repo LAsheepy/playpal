@@ -187,6 +187,28 @@ export const matchApi = {
   // 创建球局
   async createMatch(matchData) {
     try {
+      // 验证必填字段
+      if (!matchData.title || !matchData.sport || !matchData.time || !matchData.location || !matchData.max_players || !matchData.creator_id) {
+        return { data: null, error: new Error('缺少必填字段') }
+      }
+      
+      // 验证运动类型
+      const validSports = ['匹克球', '网球', '羽毛球']
+      if (!validSports.includes(matchData.sport)) {
+        return { data: null, error: new Error('无效的运动类型') }
+      }
+      
+      // 验证时间格式
+      const matchTime = new Date(matchData.time)
+      if (isNaN(matchTime.getTime())) {
+        return { data: null, error: new Error('无效的时间格式') }
+      }
+      
+      // 验证人数范围
+      if (matchData.max_players < 1 || matchData.max_players > 12) {
+        return { data: null, error: new Error('人数范围应在1-12之间') }
+      }
+      
       const { data, error } = await supabase
         .from('matches')
         .insert([matchData])
@@ -194,16 +216,26 @@ export const matchApi = {
       
       if (error) {
         console.error('创建球局API错误:', error)
-        // 如果是RLS错误，提供更友好的提示
+        
+        // 根据错误类型提供更友好的提示
+        let errorMessage = '创建球局失败'
         if (error.message.includes('row-level security')) {
-          return { data: null, error: new Error('没有权限创建球局，请检查登录状态') }
+          errorMessage = '没有权限创建球局，请检查登录状态'
+        } else if (error.message.includes('profiles')) {
+          errorMessage = '用户资料不存在，请先完善个人资料'
+        } else if (error.message.includes('network') || error.message.includes('Network')) {
+          errorMessage = '网络连接失败，请检查网络设置'
+        } else if (error.message.includes('matches')) {
+          errorMessage = '数据库表不存在，请联系管理员'
         }
+        
+        return { data: null, error: new Error(errorMessage) }
       }
       
       return { data, error }
     } catch (error) {
       console.error('创建球局异常:', error)
-      return { data: null, error }
+      return { data: null, error: new Error('创建球局异常，请稍后重试') }
     }
   },
 

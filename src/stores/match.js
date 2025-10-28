@@ -92,32 +92,89 @@ export const useMatchStore = defineStore('match', () => {
       isLoading.value = true
       errorMessage.value = ''
       
+      // 验证用户登录状态
       if (!userStore.isLoggedIn) {
-        throw new Error('请先登录后再创建球局')
+        errorMessage.value = '请先登录后再创建球局'
+        throw new Error(errorMessage.value)
       }
       
       // 游客模式下不允许创建球局
       if (userStore.isGuestMode) {
-        throw new Error('游客模式下无法创建球局，请注册账号后使用完整功能')
+        errorMessage.value = '游客模式下无法创建球局，请注册账号后使用完整功能'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证用户ID
+      if (!userStore.userInfo.id) {
+        errorMessage.value = '用户信息不完整，请重新登录'
+        throw new Error(errorMessage.value)
+      }
+      
+      // 验证必填字段
+      if (!matchData.title || !matchData.sport || !matchData.time || !matchData.location || !matchData.maxPlayers) {
+        errorMessage.value = '请完善所有必填信息'
+        throw new Error(errorMessage.value)
       }
       
       // 确保时间格式正确（转换为ISO字符串）
-      const matchTime = new Date(matchData.time).toISOString()
+      const matchTime = new Date(matchData.time)
+      if (isNaN(matchTime.getTime())) {
+        errorMessage.value = '时间格式无效'
+        throw new Error(errorMessage.value)
+      }
       
       const matchToCreate = {
-        title: matchData.title,
+        title: matchData.title.trim(),
         sport: matchData.sport,
-        time: matchTime,
-        location: matchData.location,
-        max_players: matchData.maxPlayers,
-        description: matchData.description,
+        time: matchTime.toISOString(),
+        location: matchData.location.trim(),
+        max_players: parseInt(matchData.maxPlayers),
+        description: matchData.description ? matchData.description.trim() : '',
         creator_id: userStore.userInfo.id
+      }
+      
+      // 验证数据完整性
+      if (matchToCreate.title.length < 2 || matchToCreate.title.length > 50) {
+        errorMessage.value = '球局标题长度应在2-50个字符之间'
+        throw new Error(errorMessage.value)
+      }
+      
+      if (matchToCreate.location.length < 2 || matchToCreate.location.length > 100) {
+        errorMessage.value = '地点长度应在2-100个字符之间'
+        throw new Error(errorMessage.value)
+      }
+      
+      if (matchToCreate.max_players < 1 || matchToCreate.max_players > 12) {
+        errorMessage.value = '人数上限应在1-12人之间'
+        throw new Error(errorMessage.value)
+      }
+      
+      if (matchToCreate.description && matchToCreate.description.length > 200) {
+        errorMessage.value = '描述长度不能超过200个字符'
+        throw new Error(errorMessage.value)
       }
       
       const { data, error } = await matchApi.createMatch(matchToCreate)
       if (error) {
-        errorMessage.value = '创建球局失败，请检查网络连接'
+        console.error('创建球局API错误:', error)
+        
+        // 根据错误类型提供更友好的提示
+        if (error.message.includes('row-level security')) {
+          errorMessage.value = '没有权限创建球局，请检查登录状态'
+        } else if (error.message.includes('network') || error.message.includes('Network')) {
+          errorMessage.value = '网络连接失败，请检查网络设置'
+        } else if (error.message.includes('profiles')) {
+          errorMessage.value = '用户资料不存在，请先完善个人资料'
+        } else {
+          errorMessage.value = '创建球局失败，请稍后重试'
+        }
+        
         throw error
+      }
+      
+      if (!data || data.length === 0) {
+        errorMessage.value = '创建球局失败，未返回有效数据'
+        throw new Error(errorMessage.value)
       }
       
       // 重新加载球局列表
@@ -126,7 +183,10 @@ export const useMatchStore = defineStore('match', () => {
       return { success: true, data: data[0] }
     } catch (error) {
       console.error('创建球局失败:', error)
-      return { success: false, error: errorMessage.value || '创建球局失败' }
+      return { 
+        success: false, 
+        error: errorMessage.value || error.message || '创建球局失败' 
+      }
     } finally {
       isLoading.value = false
     }

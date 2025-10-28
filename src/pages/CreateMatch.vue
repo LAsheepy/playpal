@@ -178,7 +178,11 @@ const tempPlayerCount = ref(4)
 const tempTime = ref(new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16))
 
 // 选项数据
-const sportOptions = ['匹克球', '网球', '羽毛球']
+const sportOptions = [
+  { text: '匹克球', value: '匹克球' },
+  { text: '网球', value: '网球' },
+  { text: '羽毛球', value: '羽毛球' }
+]
 
 // 获取最小日期时间（当前时间）
 const getMinDateTime = () => {
@@ -197,7 +201,7 @@ const getMaxDateTime = () => {
 
 // 球种确认
 const onSportConfirm = (value) => {
-  form.sport = value
+  form.sport = value.value || value
   showSportPicker.value = false
 }
 
@@ -244,33 +248,82 @@ const handleTimeChange = () => {
 
 // 提交表单
 const onSubmit = async () => {
-  if (!userStore.isLoggedIn) {
-    showToast('请先登录')
-    router.push('/login')
-    return
-  }
-
-  // 游客模式下不允许创建球局
-  if (userStore.isGuestMode) {
-    showToast('游客模式下无法创建球局，请注册账号后使用完整功能')
-    return
-  }
-
-  // 验证必填字段
-  if (!form.title || !form.sport || !form.time || !form.location || !form.maxPlayers) {
-    showToast('请完善所有必填信息')
-    return
-  }
-
-  // 验证时间是否有效
-  const selectedTime = new Date(form.time)
-  const currentTime = new Date()
-  if (selectedTime <= currentTime) {
-    showToast('请选择未来的时间')
-    return
-  }
-
   try {
+    // 验证登录状态
+    if (!userStore.isLoggedIn) {
+      showToast('请先登录')
+      router.push('/login')
+      return
+    }
+
+    // 游客模式下不允许创建球局
+    if (userStore.isGuestMode) {
+      showToast('游客模式下无法创建球局，请注册账号后使用完整功能')
+      return
+    }
+
+    // 验证必填字段
+    const requiredFields = [
+      { field: form.title, message: '请输入球局标题' },
+      { field: form.sport, message: '请选择球种' },
+      { field: form.time, message: '请选择时间' },
+      { field: form.location, message: '请输入地点' },
+      { field: form.maxPlayers, message: '请选择人数上限' }
+    ]
+
+    for (const { field, message } of requiredFields) {
+      if (!field) {
+        showToast(message)
+        return
+      }
+    }
+
+    // 验证标题长度
+    if (form.title.length < 2 || form.title.length > 50) {
+      showToast('球局标题长度应在2-50个字符之间')
+      return
+    }
+
+    // 验证地点长度
+    if (form.location.length < 2 || form.location.length > 100) {
+      showToast('地点长度应在2-100个字符之间')
+      return
+    }
+
+    // 验证时间格式和有效性
+    const selectedTime = new Date(form.time)
+    const currentTime = new Date()
+    
+    if (isNaN(selectedTime.getTime())) {
+      showToast('时间格式无效，请重新选择')
+      return
+    }
+    
+    if (selectedTime <= currentTime) {
+      showToast('请选择未来的时间')
+      return
+    }
+
+    // 验证时间不能超过一年
+    const maxTime = new Date()
+    maxTime.setFullYear(maxTime.getFullYear() + 1)
+    if (selectedTime > maxTime) {
+      showToast('时间不能超过一年后')
+      return
+    }
+
+    // 验证人数范围
+    if (form.maxPlayers < 1 || form.maxPlayers > 12) {
+      showToast('人数上限应在1-12人之间')
+      return
+    }
+
+    // 验证描述长度
+    if (form.description && form.description.length > 200) {
+      showToast('描述长度不能超过200个字符')
+      return
+    }
+
     const result = await matchStore.createMatch(form)
     
     if (result.success) {

@@ -172,26 +172,50 @@ const showTennisPicker = ref(false)
 const showBadmintonPicker = ref(false)
 
 // 选项数据
-const genderOptions = ['男', '女']
-const pickleballLevelOptions = ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+']
-const tennisLevelOptions = ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+']
-const badmintonLevelOptions = ['初级', '进阶', '专业']
+const genderOptions = [
+  { text: '男', value: '男' },
+  { text: '女', value: '女' }
+]
+const pickleballLevelOptions = [
+  { text: '2.0', value: '2.0' },
+  { text: '2.5', value: '2.5' },
+  { text: '3.0', value: '3.0' },
+  { text: '3.5', value: '3.5' },
+  { text: '4.0', value: '4.0' },
+  { text: '4.5', value: '4.5' },
+  { text: '5.0+', value: '5.0+' }
+]
+const tennisLevelOptions = [
+  { text: '2.0', value: '2.0' },
+  { text: '2.5', value: '2.5' },
+  { text: '3.0', value: '3.0' },
+  { text: '3.5', value: '3.5' },
+  { text: '4.0', value: '4.0' },
+  { text: '4.5', value: '4.5' },
+  { text: '5.0+', value: '5.0+' }
+]
+const badmintonLevelOptions = [
+  { text: '初级', value: '初级' },
+  { text: '进阶', value: '进阶' },
+  { text: '专业', value: '专业' }
+]
 
 // 选择器确认事件
 const onGenderConfirm = (value) => {
-  form.gender = value
+  form.gender = value.value || value
   showGenderPicker.value = false
 }
 
 const onLevelConfirm = (sport, value) => {
+  const selectedValue = value.value || value
   if (sport === 'pickleball') {
-    form.pickleballLevel = value
+    form.pickleballLevel = selectedValue
     showPickleballPicker.value = false
   } else if (sport === 'tennis') {
-    form.tennisLevel = value
+    form.tennisLevel = selectedValue
     showTennisPicker.value = false
   } else if (sport === 'badminton') {
-    form.badmintonLevel = value
+    form.badmintonLevel = selectedValue
     showBadmintonPicker.value = false
   }
 }
@@ -199,16 +223,74 @@ const onLevelConfirm = (sport, value) => {
 // 保存资料
 const handleSave = async () => {
   try {
+    // 验证表单
     await formRef.value.validate()
     
-    // 验证年龄范围
-    if (form.age && (form.age < 1 || form.age > 100)) {
-      showToast('请输入有效的年龄（1-100）')
+    // 验证昵称
+    if (!form.nickname || form.nickname.trim().length === 0) {
+      showToast('请输入昵称')
       return
     }
     
+    if (form.nickname.length < 2 || form.nickname.length > 20) {
+      showToast('昵称长度应在2-20个字符之间')
+      return
+    }
+    
+    // 验证昵称格式（只允许中文、英文、数字和下划线）
+    const nicknameRegex = /^[\u4e00-\u9fa5a-zA-Z0-9_]+$/
+    if (!nicknameRegex.test(form.nickname)) {
+      showToast('昵称只能包含中文、英文、数字和下划线')
+      return
+    }
+    
+    // 验证年龄范围
+    if (form.age) {
+      const age = parseInt(form.age)
+      if (isNaN(age) || age < 1 || age > 100) {
+        showToast('请输入有效的年龄（1-100）')
+        return
+      }
+    }
+    
+    // 验证性别
+    if (form.gender && !['男', '女'].includes(form.gender)) {
+      showToast('请选择有效的性别')
+      return
+    }
+    
+    // 验证运动水平
+    const validLevels = {
+      pickleball: ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+'],
+      tennis: ['2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0+'],
+      badminton: ['初级', '进阶', '专业']
+    }
+    
+    if (form.pickleballLevel && !validLevels.pickleball.includes(form.pickleballLevel)) {
+      showToast('请选择有效的匹克球水平')
+      return
+    }
+    
+    if (form.tennisLevel && !validLevels.tennis.includes(form.tennisLevel)) {
+      showToast('请选择有效的网球水平')
+      return
+    }
+    
+    if (form.badmintonLevel && !validLevels.badminton.includes(form.badmintonLevel)) {
+      showToast('请选择有效的羽毛球水平')
+      return
+    }
+    
+    // 验证个人简介长度
+    if (form.bio && form.bio.length > 100) {
+      showToast('个人简介长度不能超过100个字符')
+      return
+    }
+    
+    // 发送保存事件
     emit('save', form)
   } catch (error) {
+    console.error('保存资料验证失败:', error)
     showToast('请完善资料信息')
   }
 }
