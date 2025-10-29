@@ -263,32 +263,64 @@ const formatDisplayTime = (timeStr) => {
 
 // 确认时间选择
 const confirmTime = () => {
-  if (tempTime.value) {
-    form.time = tempTime.value
-    console.log('时间已选择:', form.time)
-  } else {
-    // 如果没有选择时间，设置默认时间为当前时间+1小时
-    const defaultTime = new Date()
-    defaultTime.setHours(defaultTime.getHours() + 1)
-    form.time = defaultTime.toISOString().slice(0, 16)
-    tempTime.value = form.time
-    console.log('使用默认时间:', form.time)
+  try {
+    if (tempTime.value) {
+      // 确保时间格式正确
+      const date = new Date(tempTime.value)
+      if (isNaN(date.getTime())) {
+        throw new Error('时间格式无效')
+      }
+      
+      // 转换为ISO格式并存储
+      form.time = date.toISOString()
+      console.log('时间已选择:', form.time)
+    } else {
+      // 设置默认时间为当前时间+1小时
+      const defaultTime = new Date()
+      defaultTime.setHours(defaultTime.getHours() + 1)
+      form.time = defaultTime.toISOString()
+      tempTime.value = defaultTime.toISOString().slice(0, 16)
+      console.log('使用默认时间:', form.time)
+    }
+  } catch (error) {
+    console.error('时间选择错误:', error)
+    showToast('请选择有效的时间')
+  } finally {
+    showTimePicker.value = false
   }
-  showTimePicker.value = false
 }
 
 // 确认人数选择
 const confirmPlayerCount = () => {
-  form.maxPlayers = tempPlayerCount.value
-  console.log('人数已选择:', form.maxPlayers)
-  showPlayerPicker.value = false
+  try {
+    // 验证人数范围
+    if (tempPlayerCount.value < 1 || tempPlayerCount.value > 12) {
+      throw new Error('人数应在1-12之间')
+    }
+    
+    form.maxPlayers = tempPlayerCount.value
+    console.log('人数已选择:', form.maxPlayers)
+  } catch (error) {
+    console.error('人数选择错误:', error)
+    showToast(error.message)
+  } finally {
+    showPlayerPicker.value = false
+  }
 }
 
 // 处理时间变化
 const handleTimeChange = () => {
-  if (tempTime.value) {
-    form.time = tempTime.value
-    console.log('时间已更新:', form.time)
+  try {
+    if (tempTime.value) {
+      const date = new Date(tempTime.value)
+      if (isNaN(date.getTime())) {
+        throw new Error('时间格式无效')
+      }
+      form.time = date.toISOString()
+      console.log('时间已更新:', form.time)
+    }
+  } catch (error) {
+    console.error('时间更新错误:', error)
   }
 }
 
@@ -338,20 +370,20 @@ const onSubmit = async () => {
       return
     }
 
-    // 验证时间格式和有效性
+    // 确保时间格式正确
     const selectedTime = new Date(form.time)
-    const currentTime = new Date()
-    
     if (isNaN(selectedTime.getTime())) {
       showToast('时间格式无效，请重新选择')
       return
     }
     
+    // 验证时间有效性
+    const currentTime = new Date()
     if (selectedTime <= currentTime) {
       showToast('请选择未来的时间')
       return
     }
-
+    
     // 验证时间不能超过一年
     const maxTime = new Date()
     maxTime.setFullYear(maxTime.getFullYear() + 1)
@@ -372,7 +404,18 @@ const onSubmit = async () => {
       return
     }
 
-    const result = await matchStore.createMatch(form)
+    // 准备提交数据
+    const matchData = {
+      title: form.title.trim(),
+      sport: form.sport,
+      time: selectedTime.toISOString(),
+      location: form.location.trim(),
+      max_players: parseInt(form.maxPlayers),
+      description: form.description ? form.description.trim() : ''
+    }
+
+    // 调用store方法创建球局
+    const result = await matchStore.createMatch(matchData)
     
     if (result.success) {
       showToast({
@@ -380,12 +423,11 @@ const onSubmit = async () => {
         type: 'success'
       })
 
-      // 跳转到球局详情页
+      // 跳转到新创建的球局详情页
       setTimeout(() => {
         if (result.data && result.data.id) {
           router.push(`/match/${result.data.id}`)
         } else {
-          // 如果返回的数据中没有id，跳转到首页
           router.push('/home')
         }
       }, 1000)
