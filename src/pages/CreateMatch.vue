@@ -63,50 +63,52 @@
                 </div>
               </div>
               <div class="time-picker-wrapper">
-                <div class="picker-row">
-                  <span class="picker-label">年</span>
-                  <van-picker
-                    v-model="selectedYear"
-                    :columns="yearOptions"
-                    @change="onYearChange"
-                    value-key="text"
-                  />
-                </div>
-                <div class="picker-row">
-                  <span class="picker-label">月</span>
-                  <van-picker
-                    v-model="selectedMonth"
-                    :columns="monthOptions"
-                    @change="onMonthChange"
-                    value-key="text"
-                  />
-                </div>
-                <div class="picker-row">
-                  <span class="picker-label">日</span>
-                  <van-picker
-                    v-model="selectedDay"
-                    :columns="dayOptions"
-                    @change="onDayChange"
-                    value-key="text"
-                  />
-                </div>
-                <div class="picker-row">
-                  <span class="picker-label">时</span>
-                  <van-picker
-                    v-model="selectedHour"
-                    :columns="hourOptions"
-                    @change="onHourChange"
-                    value-key="text"
-                  />
-                </div>
-                <div class="picker-row">
-                  <span class="picker-label">分</span>
-                  <van-picker
-                    v-model="selectedMinute"
-                    :columns="minuteOptions"
-                    @change="onMinuteChange"
-                    value-key="text"
-                  />
+                <div class="picker-row-horizontal">
+                  <div class="picker-column">
+                    <span class="picker-label">年</span>
+                    <van-picker
+                      v-model="selectedYear"
+                      :columns="yearOptions"
+                      @change="onYearChange"
+                      value-key="text"
+                    />
+                  </div>
+                  <div class="picker-column">
+                    <span class="picker-label">月</span>
+                    <van-picker
+                      v-model="selectedMonth"
+                      :columns="monthOptions"
+                      @change="onMonthChange"
+                      value-key="text"
+                    />
+                  </div>
+                  <div class="picker-column">
+                    <span class="picker-label">日</span>
+                    <van-picker
+                      v-model="selectedDay"
+                      :columns="dayOptions"
+                      @change="onDayChange"
+                      value-key="text"
+                    />
+                  </div>
+                  <div class="picker-column">
+                    <span class="picker-label">时</span>
+                    <van-picker
+                      v-model="selectedHour"
+                      :columns="hourOptions"
+                      @change="onHourChange"
+                      value-key="text"
+                    />
+                  </div>
+                  <div class="picker-column">
+                    <span class="picker-label">分</span>
+                    <van-picker
+                      v-model="selectedMinute"
+                      :columns="minuteOptions"
+                      @change="onMinuteChange"
+                      value-key="text"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -633,33 +635,44 @@ onMounted(() => {
 }
 
 .time-picker-wrapper {
+  padding: 16px;
+}
+
+.picker-row-horizontal {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 4px;
+  height: 200px;
+}
+
+.picker-column {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  gap: 8px;
-}
-
-.picker-row {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.picker-row:last-child {
-  border-bottom: none;
+  flex: 1;
+  min-width: 0;
 }
 
 .picker-label {
-  width: 36px;
-  font-size: 14px;
+  width: 100%;
+  font-size: 12px;
   font-weight: bold;
   color: #333;
   text-align: center;
   background: #f5f5f5;
-  padding: 4px 8px;
+  padding: 6px 4px;
   border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+:deep(.van-picker) {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.van-picker-column) {
+  font-size: 12px;
 }
 
 :deep(.van-picker) {
