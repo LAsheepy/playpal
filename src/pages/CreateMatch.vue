@@ -53,17 +53,63 @@
             :rules="[{ required: true, message: '请选择时间' }]"
           />
           
-          <van-popup v-model:show="showTimePicker" position="bottom">
-            <van-datetime-picker
-              v-model="currentTime"
-              type="datetime"
-              title="选择时间"
-              :min-date="minDate"
-              :max-date="maxDate"
-              :formatter="formatter"
-              @confirm="onTimeConfirm"
-              @cancel="showTimePicker = false"
-            />
+          <van-popup v-model:show="showTimePicker" position="bottom" :style="{ height: '50%' }" round>
+            <div class="time-picker-container">
+              <div class="time-picker-header">
+                <span class="picker-title">选择时间</span>
+                <div>
+                  <van-button size="small" plain @click="showTimePicker = false" style="margin-right: 8px;">取消</van-button>
+                  <van-button size="small" type="primary" @click="confirmTime">确定</van-button>
+                </div>
+              </div>
+              <div class="time-picker-wrapper">
+                <div class="picker-row">
+                  <span class="picker-label">年</span>
+                  <van-picker
+                    v-model="selectedYear"
+                    :columns="yearOptions"
+                    @change="onYearChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">月</span>
+                  <van-picker
+                    v-model="selectedMonth"
+                    :columns="monthOptions"
+                    @change="onMonthChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">日</span>
+                  <van-picker
+                    v-model="selectedDay"
+                    :columns="dayOptions"
+                    @change="onDayChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">时</span>
+                  <van-picker
+                    v-model="selectedHour"
+                    :columns="hourOptions"
+                    @change="onHourChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">分</span>
+                  <van-picker
+                    v-model="selectedMinute"
+                    :columns="minuteOptions"
+                    @change="onMinuteChange"
+                    value-key="text"
+                  />
+                </div>
+              </div>
+            </div>
           </van-popup>
           
           <van-field
@@ -193,11 +239,6 @@ const dayOptions = ref([])
 const hourOptions = ref([])
 const minuteOptions = ref([])
 
-// 时间选择器数据
-const currentTime = ref(new Date())
-const minDate = ref(new Date())
-const maxDate = ref(new Date(new Date().getFullYear() + 1, 11, 31))
-
 // 生成时间选项
 const generateTimeOptions = () => {
   // 生成年份选项（当前年份到5年后）
@@ -225,26 +266,6 @@ const generateTimeOptions = () => {
   for (let i = 0; i <= 59; i += 5) {
     minuteOptions.value.push({ text: i.toString().padStart(2, '0') + '分', value: i })
   }
-}
-
-// 时间选择器格式化
-const formatter = (type, value) => {
-  if (type === 'year') {
-    return `${value}年`
-  }
-  if (type === 'month') {
-    return `${value}月`
-  }
-  if (type === 'day') {
-    return `${value}日`
-  }
-  if (type === 'hour') {
-    return `${value}时`
-  }
-  if (type === 'minute') {
-    return `${value}分`
-  }
-  return value
 }
 
 // 生成日期选项
@@ -275,9 +296,6 @@ const initFormData = () => {
   selectedDay.value = defaultTime.getDate()
   selectedHour.value = defaultTime.getHours()
   selectedMinute.value = Math.floor(defaultTime.getMinutes() / 5) * 5
-  
-  // 设置当前时间选择器默认值
-  currentTime.value = defaultTime
   
   // 生成日期选项
   generateDayOptions(selectedYear.value, selectedMonth.value)
@@ -331,42 +349,12 @@ const onMinuteChange = (value) => {
   updateFormTime()
 }
 
-// 时间选择器确认
-const onTimeConfirm = (value) => {
-  // 验证时间是否在未来
-  const selectedTime = new Date(value)
-  const currentTime = new Date()
-  
-  if (selectedTime <= currentTime) {
-    showToast('请选择未来的时间')
-    return
-  }
-  
-  // 验证时间不能超过一年
-  const maxTime = new Date()
-  maxTime.setFullYear(maxTime.getFullYear() + 1)
-  if (selectedTime > maxTime) {
-    showToast('时间不能超过一年后')
-    return
-  }
-  
-  form.time = selectedTime.toISOString()
-  console.log('时间已选择:', form.time)
-  showTimePicker.value = false
-}
-
-const cancelTime = () => {
-  showTimePicker.value = false
-}
-
 // 选项数据
 const sportOptions = [
   { text: '匹克球', value: '匹克球' },
   { text: '网球', value: '网球' },
   { text: '羽毛球', value: '羽毛球' }
 ]
-
-
 
 // 球种确认
 const onSportConfirm = (value) => {
@@ -393,46 +381,39 @@ const onSportConfirm = (value) => {
   showSportPicker.value = false
 }
 
-// 格式化显示时间
-const formatDisplayTime = (timeStr) => {
-  try {
-    // 处理 datetime-local 格式（YYYY-MM-DDTHH:mm）
-    if (timeStr.includes('T')) {
-      const date = new Date(timeStr)
-      if (isNaN(date.getTime())) {
-        return '时间格式错误'
-      }
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
-    
-    // 处理标准 ISO 格式
-    const date = new Date(timeStr)
-    if (isNaN(date.getTime())) {
-      return '时间格式错误'
-    }
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch (error) {
-    console.error('时间格式化错误:', error)
-    return '时间格式错误'
-  }
-}
-
-// 确认时间选择（兼容旧版）
+// 确认时间选择
 const confirmTime = () => {
-  // 使用新的DatetimePicker
-  onTimeConfirm(currentTime.value)
+  // 验证时间是否完整选择
+  if (!selectedYear.value || !selectedMonth.value || !selectedDay.value || selectedHour.value === undefined || selectedMinute.value === undefined) {
+    showToast('请完整选择时间')
+    return
+  }
+  
+  // 验证时间格式和有效性
+  const selectedTime = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value)
+  const currentTime = new Date()
+  
+  if (isNaN(selectedTime.getTime())) {
+    showToast('时间格式无效，请重新选择')
+    return
+  }
+  
+  if (selectedTime <= currentTime) {
+    showToast('请选择未来的时间')
+    return
+  }
+  
+  // 验证时间不能超过一年
+  const maxTime = new Date()
+  maxTime.setFullYear(maxTime.getFullYear() + 1)
+  if (selectedTime > maxTime) {
+    showToast('时间不能超过一年后')
+    return
+  }
+  
+  form.time = selectedTime.toISOString()
+  console.log('时间已选择:', form.time)
+  showTimePicker.value = false
 }
 
 // 确认人数选择
@@ -473,8 +454,6 @@ const timeDisplay = computed(() => {
     return '时间格式错误'
   }
 })
-
-
 
 // 提交表单
 const onSubmit = async () => {
@@ -653,63 +632,6 @@ onMounted(() => {
   font-weight: bold;
 }
 
-.time-input-wrapper {
-  padding: 16px;
-}
-
-.datetime-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-}
-
-.player-picker-container {
-  background: white;
-}
-
-.picker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #ebedf0;
-}
-
-.number-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 16px;
-  gap: 16px;
-}
-
-.player-count-label {
-  font-size: 18px;
-  font-weight: bold;
-  color: #1989fa;
-}
-
-/* 时间选择器样式优化 */
-:deep(.van-datetime-picker) {
-  max-height: 400px;
-}
-
-:deep(.van-picker__toolbar) {
-  background: #f8f9fa;
-}
-
-:deep(.van-picker__confirm) {
-  color: #1989fa;
-}
-
-:deep(.van-picker__cancel) {
-  color: #969799;
-}
-
-/* 时间选择器样式 */
 .time-picker-wrapper {
   display: flex;
   flex-direction: column;
@@ -752,5 +674,31 @@ onMounted(() => {
 :deep(.van-picker-column__item--selected) {
   color: #1989fa;
   font-weight: bold;
+}
+
+.player-picker-container {
+  background: white;
+}
+
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #ebedf0;
+}
+
+.number-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  gap: 16px;
+}
+
+.player-count-label {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1989fa;
 }
 </style>
