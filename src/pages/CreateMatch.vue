@@ -47,13 +47,13 @@
             clickable
             name="time"
             label="时间"
-            :value="form.time ? formatDisplayTime(form.time) : '请选择时间'"
+            :value="timeDisplay"
             placeholder="请选择时间"
             @click="showTimePicker = true"
             :rules="[{ required: true, message: '请选择时间' }]"
           />
           
-          <van-popup v-model:show="showTimePicker" position="bottom" :style="{ height: '40%' }" round>
+          <van-popup v-model:show="showTimePicker" position="bottom" :style="{ height: '50%' }" round>
             <div class="time-picker-container">
               <div class="time-picker-header">
                 <span class="picker-title">选择时间</span>
@@ -62,15 +62,52 @@
                   <van-button size="small" type="primary" @click="confirmTime">确定</van-button>
                 </div>
               </div>
-              <div class="time-input-wrapper">
-                <input
-                  v-model="tempTime"
-                  type="datetime-local"
-                  :min="getMinDateTime()"
-                  :max="getMaxDateTime()"
-                  class="datetime-input"
-                  @change="handleTimeChange"
-                />
+              <div class="time-picker-wrapper">
+                <div class="picker-row">
+                  <span class="picker-label">年</span>
+                  <van-picker
+                    v-model="selectedYear"
+                    :columns="yearOptions"
+                    @change="onYearChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">月</span>
+                  <van-picker
+                    v-model="selectedMonth"
+                    :columns="monthOptions"
+                    @change="onMonthChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">日</span>
+                  <van-picker
+                    v-model="selectedDay"
+                    :columns="dayOptions"
+                    @change="onDayChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">时</span>
+                  <van-picker
+                    v-model="selectedHour"
+                    :columns="hourOptions"
+                    @change="onHourChange"
+                    value-key="text"
+                  />
+                </div>
+                <div class="picker-row">
+                  <span class="picker-label">分</span>
+                  <van-picker
+                    v-model="selectedMinute"
+                    :columns="minuteOptions"
+                    @change="onMinuteChange"
+                    value-key="text"
+                  />
+                </div>
               </div>
             </div>
           </van-popup>
@@ -187,7 +224,58 @@ const showPlayerPicker = ref(false)
 
 // 临时数据
 const tempPlayerCount = ref(4)
-const tempTime = ref(new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16))
+
+// 时间选择器数据
+const selectedYear = ref('')
+const selectedMonth = ref('')
+const selectedDay = ref('')
+const selectedHour = ref('')
+const selectedMinute = ref('')
+
+// 时间选项数据
+const yearOptions = ref([])
+const monthOptions = ref([])
+const dayOptions = ref([])
+const hourOptions = ref([])
+const minuteOptions = ref([])
+
+// 生成时间选项
+const generateTimeOptions = () => {
+  // 生成年份选项（当前年份到5年后）
+  const currentYear = new Date().getFullYear()
+  yearOptions.value = []
+  for (let i = 0; i <= 5; i++) {
+    const year = currentYear + i
+    yearOptions.value.push({ text: year + '年', value: year })
+  }
+  
+  // 生成月份选项
+  monthOptions.value = []
+  for (let i = 1; i <= 12; i++) {
+    monthOptions.value.push({ text: i + '月', value: i })
+  }
+  
+  // 生成小时选项
+  hourOptions.value = []
+  for (let i = 0; i <= 23; i++) {
+    hourOptions.value.push({ text: i.toString().padStart(2, '0') + '时', value: i })
+  }
+  
+  // 生成分钟选项
+  minuteOptions.value = []
+  for (let i = 0; i <= 59; i += 5) {
+    minuteOptions.value.push({ text: i.toString().padStart(2, '0') + '分', value: i })
+  }
+}
+
+// 生成日期选项
+const generateDayOptions = (year, month) => {
+  dayOptions.value = []
+  const daysInMonth = new Date(year, month, 0).getDate()
+  for (let i = 1; i <= daysInMonth; i++) {
+    dayOptions.value.push({ text: i + '日', value: i })
+  }
+}
 
 // 初始化表单数据
 const initFormData = () => {
@@ -195,11 +283,70 @@ const initFormData = () => {
   form.maxPlayers = 4
   tempPlayerCount.value = 4
   
+  // 生成时间选项
+  generateTimeOptions()
+  
   // 设置默认时间（当前时间+1小时）
   const defaultTime = new Date()
   defaultTime.setHours(defaultTime.getHours() + 1)
-  form.time = defaultTime.toISOString().slice(0, 16)
-  tempTime.value = form.time
+  
+  // 设置默认时间选择器值
+  selectedYear.value = defaultTime.getFullYear()
+  selectedMonth.value = defaultTime.getMonth() + 1
+  selectedDay.value = defaultTime.getDate()
+  selectedHour.value = defaultTime.getHours()
+  selectedMinute.value = Math.floor(defaultTime.getMinutes() / 5) * 5
+  
+  // 生成日期选项
+  generateDayOptions(selectedYear.value, selectedMonth.value)
+  
+  // 设置表单时间
+  updateFormTime()
+}
+
+// 更新表单时间
+const updateFormTime = () => {
+  if (selectedYear.value && selectedMonth.value && selectedDay.value && selectedHour.value !== undefined && selectedMinute.value !== undefined) {
+    const date = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value)
+    form.time = date.toISOString()
+    console.log('时间已更新:', form.time)
+  }
+}
+
+// 年份变化处理
+const onYearChange = (value) => {
+  selectedYear.value = value.selectedValues ? value.selectedValues[0] : value.value
+  if (selectedMonth.value) {
+    generateDayOptions(selectedYear.value, selectedMonth.value)
+    updateFormTime()
+  }
+}
+
+// 月份变化处理
+const onMonthChange = (value) => {
+  selectedMonth.value = value.selectedValues ? value.selectedValues[0] : value.value
+  if (selectedYear.value) {
+    generateDayOptions(selectedYear.value, selectedMonth.value)
+    updateFormTime()
+  }
+}
+
+// 日期变化处理
+const onDayChange = (value) => {
+  selectedDay.value = value.selectedValues ? value.selectedValues[0] : value.value
+  updateFormTime()
+}
+
+// 小时变化处理
+const onHourChange = (value) => {
+  selectedHour.value = value.selectedValues ? value.selectedValues[0] : value.value
+  updateFormTime()
+}
+
+// 分钟变化处理
+const onMinuteChange = (value) => {
+  selectedMinute.value = value.selectedValues ? value.selectedValues[0] : value.value
+  updateFormTime()
 }
 
 // 选项数据
@@ -209,20 +356,7 @@ const sportOptions = [
   { text: '羽毛球', value: '羽毛球' }
 ]
 
-// 获取最小日期时间（当前时间）
-const getMinDateTime = () => {
-  const now = new Date()
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-  return now.toISOString().slice(0, 16)
-}
 
-// 获取最大日期时间（一年后）
-const getMaxDateTime = () => {
-  const maxDate = new Date()
-  maxDate.setFullYear(maxDate.getFullYear() + 1)
-  maxDate.setMinutes(maxDate.getMinutes() - maxDate.getTimezoneOffset())
-  return maxDate.toISOString().slice(0, 16)
-}
 
 // 球种确认
 const onSportConfirm = (value) => {
@@ -287,39 +421,36 @@ const formatDisplayTime = (timeStr) => {
 
 // 确认时间选择
 const confirmTime = () => {
-  if (tempTime.value) {
-    // 验证时间格式和有效性
-    const selectedTime = new Date(tempTime.value)
-    const currentTime = new Date()
-    
-    if (isNaN(selectedTime.getTime())) {
-      showToast('时间格式无效，请重新选择')
-      return
-    }
-    
-    if (selectedTime <= currentTime) {
-      showToast('请选择未来的时间')
-      return
-    }
-    
-    // 验证时间不能超过一年
-    const maxTime = new Date()
-    maxTime.setFullYear(maxTime.getFullYear() + 1)
-    if (selectedTime > maxTime) {
-      showToast('时间不能超过一年后')
-      return
-    }
-    
-    form.time = tempTime.value
-    console.log('时间已选择:', form.time)
-  } else {
-    // 如果没有选择时间，设置默认时间为当前时间+1小时
-    const defaultTime = new Date()
-    defaultTime.setHours(defaultTime.getHours() + 1)
-    form.time = defaultTime.toISOString().slice(0, 16)
-    tempTime.value = form.time
-    console.log('使用默认时间:', form.time)
+  // 验证时间是否完整选择
+  if (!selectedYear.value || !selectedMonth.value || !selectedDay.value || selectedHour.value === undefined || selectedMinute.value === undefined) {
+    showToast('请完整选择时间')
+    return
   }
+  
+  // 验证时间格式和有效性
+  const selectedTime = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value)
+  const currentTime = new Date()
+  
+  if (isNaN(selectedTime.getTime())) {
+    showToast('时间格式无效，请重新选择')
+    return
+  }
+  
+  if (selectedTime <= currentTime) {
+    showToast('请选择未来的时间')
+    return
+  }
+  
+  // 验证时间不能超过一年
+  const maxTime = new Date()
+  maxTime.setFullYear(maxTime.getFullYear() + 1)
+  if (selectedTime > maxTime) {
+    showToast('时间不能超过一年后')
+    return
+  }
+  
+  form.time = selectedTime.toISOString()
+  console.log('时间已选择:', form.time)
   showTimePicker.value = false
 }
 
@@ -341,27 +472,26 @@ const cancelPlayerCount = () => {
   showPlayerPicker.value = false
 }
 
-// 处理时间变化
-const handleTimeChange = () => {
-  if (tempTime.value) {
-    // 实时验证时间格式
-    const selectedTime = new Date(tempTime.value)
-    const currentTime = new Date()
+// 计算属性：显示时间
+const timeDisplay = computed(() => {
+  if (!form.time) return '请选择时间'
+  
+  try {
+    const date = new Date(form.time)
+    if (isNaN(date.getTime())) return '时间格式错误'
     
-    if (isNaN(selectedTime.getTime())) {
-      console.warn('时间格式无效')
-      return
-    }
-    
-    if (selectedTime <= currentTime) {
-      console.warn('请选择未来的时间')
-      return
-    }
-    
-    form.time = tempTime.value
-    console.log('时间已更新:', form.time)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    console.error('时间格式化错误:', error)
+    return '时间格式错误'
   }
-}
+})
 
 
 
@@ -579,5 +709,50 @@ onMounted(() => {
   font-size: 18px;
   font-weight: bold;
   color: #1989fa;
+}
+
+/* 时间选择器样式 */
+.time-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+}
+
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.picker-label {
+  width: 40px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+}
+
+:deep(.van-picker) {
+  flex: 1;
+}
+
+:deep(.van-picker-column) {
+  font-size: 14px;
+}
+
+:deep(.van-picker__mask) {
+  background-image: 
+    linear-gradient(180deg, hsla(0, 0%, 100%, 0.9), hsla(0, 0%, 100%, 0.4)),
+    linear-gradient(0deg, hsla(0, 0%, 100%, 0.9), hsla(0, 0%, 100%, 0.4));
+}
+
+:deep(.van-picker-column__item) {
+  color: #333;
+}
+
+:deep(.van-picker-column__item--selected) {
+  color: #1989fa;
+  font-weight: bold;
 }
 </style>
