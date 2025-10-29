@@ -286,16 +286,15 @@ const initFormData = () => {
   // 生成时间选项
   generateTimeOptions()
   
-  // 设置默认时间（当前时间+1小时）
-  const defaultTime = new Date()
-  defaultTime.setHours(defaultTime.getHours() + 1)
+  // 设置默认时间为当前系统时间
+  const currentTime = new Date()
   
   // 设置默认时间选择器值
-  selectedYear.value = defaultTime.getFullYear()
-  selectedMonth.value = defaultTime.getMonth() + 1
-  selectedDay.value = defaultTime.getDate()
-  selectedHour.value = defaultTime.getHours()
-  selectedMinute.value = Math.floor(defaultTime.getMinutes() / 5) * 5
+  selectedYear.value = currentTime.getFullYear()
+  selectedMonth.value = currentTime.getMonth() + 1
+  selectedDay.value = currentTime.getDate()
+  selectedHour.value = currentTime.getHours()
+  selectedMinute.value = Math.floor(currentTime.getMinutes() / 5) * 5
   
   // 生成日期选项
   generateDayOptions(selectedYear.value, selectedMonth.value)
@@ -398,8 +397,9 @@ const confirmTime = () => {
     return
   }
   
-  if (selectedTime <= currentTime) {
-    showToast('请选择未来的时间')
+  // 允许选择当前时间（不强制要求未来时间）
+  if (selectedTime < currentTime) {
+    showToast('请选择当前或未来的时间')
     return
   }
   
@@ -636,21 +636,30 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  gap: 12px;
+  gap: 8px;
 }
 
 .picker-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.picker-row:last-child {
+  border-bottom: none;
 }
 
 .picker-label {
-  width: 40px;
+  width: 36px;
   font-size: 14px;
   font-weight: bold;
   color: #333;
   text-align: center;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 :deep(.van-picker) {
