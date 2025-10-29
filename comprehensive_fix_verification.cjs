@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 开始修复和验证所有功能bug...\n');
+console.log('🔧 开始全面修复和验证所有功能bug...\n');
 
 // 检查文件是否存在
 function checkFileExists(filePath) {

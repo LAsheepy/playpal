@@ -35,6 +35,7 @@
               :columns="genderOptions"
               @confirm="onGenderConfirm"
               @cancel="showGenderPicker = false"
+              value-key="text"
             />
           </van-popup>
           
@@ -109,6 +110,7 @@
         :columns="pickleballLevelOptions"
         @confirm="(value) => onLevelConfirm('pickleball', value)"
         @cancel="showPickleballPicker = false"
+        value-key="text"
       />
     </van-popup>
     
@@ -117,6 +119,7 @@
         :columns="tennisLevelOptions"
         @confirm="(value) => onLevelConfirm('tennis', value)"
         @cancel="showTennisPicker = false"
+        value-key="text"
       />
     </van-popup>
     
@@ -125,6 +128,7 @@
         :columns="badmintonLevelOptions"
         @confirm="(value) => onLevelConfirm('badminton', value)"
         @cancel="showBadmintonPicker = false"
+        value-key="text"
       />
     </van-popup>
   </div>

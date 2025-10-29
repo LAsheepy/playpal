@@ -202,10 +202,11 @@ const getMaxDateTime = () => {
 
 // 球种确认
 const onSportConfirm = (value) => {
-  // Vant Picker 返回的是对象，需要提取 value 属性
+  // Vant Picker 返回的是对象，需要提取 text 属性用于显示
   const selectedValue = value.value || value
+  const displayText = value.text || value
   form.sport = selectedValue
-  console.log('球种已选择:', form.sport)
+  console.log('球种已选择:', form.sport, '显示文本:', displayText)
   showSportPicker.value = false
 }
 
