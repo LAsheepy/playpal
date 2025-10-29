@@ -57,7 +57,10 @@
             <div class="time-picker-container">
               <div class="time-picker-header">
                 <span class="picker-title">选择时间</span>
-                <van-button size="small" type="primary" @click="confirmTime">确定</van-button>
+                <div>
+                  <van-button size="small" plain @click="showTimePicker = false" style="margin-right: 8px;">取消</van-button>
+                  <van-button size="small" type="primary" @click="confirmTime">确定</van-button>
+                </div>
               </div>
               <div class="time-input-wrapper">
                 <input
@@ -88,7 +91,7 @@
             clickable
             name="maxPlayers"
             label="人数上限"
-            :value="form.maxPlayers ? form.maxPlayers + '人' : '请选择人数上限'"
+            v-model="maxPlayersDisplay"
             placeholder="请选择人数上限"
             @click="showPlayerPicker = true"
             :rules="[{ required: true, message: '请选择人数上限' }]"
@@ -98,7 +101,10 @@
             <div class="player-picker-container">
               <div class="picker-header">
                 <span class="picker-title">选择人数上限</span>
-                <van-button size="small" type="primary" @click="confirmPlayerCount">确定</van-button>
+                <div>
+                  <van-button size="small" plain @click="cancelPlayerCount" style="margin-right: 8px;">取消</van-button>
+                  <van-button size="small" type="primary" @click="confirmPlayerCount">确定</van-button>
+                </div>
               </div>
               <div class="number-input-wrapper">
                 <van-stepper
@@ -139,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMatchStore } from '../stores/match'
 import { useUserStore } from '../stores/user'
@@ -169,6 +175,11 @@ const form = reactive({
   description: ''
 })
 
+// 计算属性：显示人数上限
+const maxPlayersDisplay = computed(() => {
+  return form.maxPlayers ? form.maxPlayers + '人' : '请选择人数上限'
+})
+
 // 选择器状态
 const showSportPicker = ref(false)
 const showTimePicker = ref(false)
@@ -177,6 +188,19 @@ const showPlayerPicker = ref(false)
 // 临时数据
 const tempPlayerCount = ref(4)
 const tempTime = ref(new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16))
+
+// 初始化表单数据
+const initFormData = () => {
+  // 设置默认人数上限
+  form.maxPlayers = 4
+  tempPlayerCount.value = 4
+  
+  // 设置默认时间（当前时间+1小时）
+  const defaultTime = new Date()
+  defaultTime.setHours(defaultTime.getHours() + 1)
+  form.time = defaultTime.toISOString().slice(0, 16)
+  tempTime.value = form.time
+}
 
 // 选项数据
 const sportOptions = [
@@ -263,64 +287,79 @@ const formatDisplayTime = (timeStr) => {
 
 // 确认时间选择
 const confirmTime = () => {
-  try {
-    if (tempTime.value) {
-      // 确保时间格式正确
-      const date = new Date(tempTime.value)
-      if (isNaN(date.getTime())) {
-        throw new Error('时间格式无效')
-      }
-      
-      // 转换为ISO格式并存储
-      form.time = date.toISOString()
-      console.log('时间已选择:', form.time)
-    } else {
-      // 设置默认时间为当前时间+1小时
-      const defaultTime = new Date()
-      defaultTime.setHours(defaultTime.getHours() + 1)
-      form.time = defaultTime.toISOString()
-      tempTime.value = defaultTime.toISOString().slice(0, 16)
-      console.log('使用默认时间:', form.time)
+  if (tempTime.value) {
+    // 验证时间格式和有效性
+    const selectedTime = new Date(tempTime.value)
+    const currentTime = new Date()
+    
+    if (isNaN(selectedTime.getTime())) {
+      showToast('时间格式无效，请重新选择')
+      return
     }
-  } catch (error) {
-    console.error('时间选择错误:', error)
-    showToast('请选择有效的时间')
-  } finally {
-    showTimePicker.value = false
+    
+    if (selectedTime <= currentTime) {
+      showToast('请选择未来的时间')
+      return
+    }
+    
+    // 验证时间不能超过一年
+    const maxTime = new Date()
+    maxTime.setFullYear(maxTime.getFullYear() + 1)
+    if (selectedTime > maxTime) {
+      showToast('时间不能超过一年后')
+      return
+    }
+    
+    form.time = tempTime.value
+    console.log('时间已选择:', form.time)
+  } else {
+    // 如果没有选择时间，设置默认时间为当前时间+1小时
+    const defaultTime = new Date()
+    defaultTime.setHours(defaultTime.getHours() + 1)
+    form.time = defaultTime.toISOString().slice(0, 16)
+    tempTime.value = form.time
+    console.log('使用默认时间:', form.time)
   }
+  showTimePicker.value = false
 }
 
 // 确认人数选择
 const confirmPlayerCount = () => {
-  try {
-    // 验证人数范围
-    if (tempPlayerCount.value < 1 || tempPlayerCount.value > 12) {
-      throw new Error('人数应在1-12之间')
-    }
-    
-    form.maxPlayers = tempPlayerCount.value
-    console.log('人数已选择:', form.maxPlayers)
-  } catch (error) {
-    console.error('人数选择错误:', error)
-    showToast(error.message)
-  } finally {
-    showPlayerPicker.value = false
+  // 验证人数范围
+  if (tempPlayerCount.value < 1 || tempPlayerCount.value > 12) {
+    showToast('人数上限应在1-12人之间')
+    return
   }
+  
+  form.maxPlayers = tempPlayerCount.value
+  console.log('人数已选择:', form.maxPlayers)
+  showPlayerPicker.value = false
+}
+
+// 取消人数选择
+const cancelPlayerCount = () => {
+  showPlayerPicker.value = false
 }
 
 // 处理时间变化
 const handleTimeChange = () => {
-  try {
-    if (tempTime.value) {
-      const date = new Date(tempTime.value)
-      if (isNaN(date.getTime())) {
-        throw new Error('时间格式无效')
-      }
-      form.time = date.toISOString()
-      console.log('时间已更新:', form.time)
+  if (tempTime.value) {
+    // 实时验证时间格式
+    const selectedTime = new Date(tempTime.value)
+    const currentTime = new Date()
+    
+    if (isNaN(selectedTime.getTime())) {
+      console.warn('时间格式无效')
+      return
     }
-  } catch (error) {
-    console.error('时间更新错误:', error)
+    
+    if (selectedTime <= currentTime) {
+      console.warn('请选择未来的时间')
+      return
+    }
+    
+    form.time = tempTime.value
+    console.log('时间已更新:', form.time)
   }
 }
 
@@ -358,6 +397,13 @@ const onSubmit = async () => {
       }
     }
 
+    // 验证球种选择是否有效
+    const validSports = ['匹克球', '网球', '羽毛球']
+    if (!validSports.includes(form.sport)) {
+      showToast('请选择有效的球种')
+      return
+    }
+
     // 验证标题长度
     if (form.title.length < 2 || form.title.length > 50) {
       showToast('球局标题长度应在2-50个字符之间')
@@ -370,20 +416,20 @@ const onSubmit = async () => {
       return
     }
 
-    // 确保时间格式正确
+    // 验证时间格式和有效性
     const selectedTime = new Date(form.time)
+    const currentTime = new Date()
+    
     if (isNaN(selectedTime.getTime())) {
       showToast('时间格式无效，请重新选择')
       return
     }
     
-    // 验证时间有效性
-    const currentTime = new Date()
     if (selectedTime <= currentTime) {
       showToast('请选择未来的时间')
       return
     }
-    
+
     // 验证时间不能超过一年
     const maxTime = new Date()
     maxTime.setFullYear(maxTime.getFullYear() + 1)
@@ -404,18 +450,7 @@ const onSubmit = async () => {
       return
     }
 
-    // 准备提交数据
-    const matchData = {
-      title: form.title.trim(),
-      sport: form.sport,
-      time: selectedTime.toISOString(),
-      location: form.location.trim(),
-      max_players: parseInt(form.maxPlayers),
-      description: form.description ? form.description.trim() : ''
-    }
-
-    // 调用store方法创建球局
-    const result = await matchStore.createMatch(matchData)
+    const result = await matchStore.createMatch(form)
     
     if (result.success) {
       showToast({
@@ -423,11 +458,12 @@ const onSubmit = async () => {
         type: 'success'
       })
 
-      // 跳转到新创建的球局详情页
+      // 跳转到球局详情页
       setTimeout(() => {
         if (result.data && result.data.id) {
           router.push(`/match/${result.data.id}`)
         } else {
+          // 如果返回的数据中没有id，跳转到首页
           router.push('/home')
         }
       }, 1000)
@@ -455,7 +491,11 @@ onMounted(() => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {
     router.push('/login')
+    return
   }
+  
+  // 初始化表单数据
+  initFormData()
 })
 </script>
 
