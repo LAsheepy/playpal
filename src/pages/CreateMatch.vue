@@ -202,11 +202,26 @@ const getMaxDateTime = () => {
 
 // 球种确认
 const onSportConfirm = (value) => {
-  // Vant Picker 返回的是对象，需要提取 text 属性用于显示
-  const selectedValue = value.value || value
-  const displayText = value.text || value
+  // Vant Picker 返回的是Proxy对象，需要提取selectedValues数组的第一个值
+  let selectedValue = ''
+  let displayText = ''
+  
+  // 处理Proxy对象，提取实际的值
+  if (value && value.selectedValues && value.selectedValues.length > 0) {
+    selectedValue = value.selectedValues[0]
+    displayText = value.selectedOptions && value.selectedOptions[0] ? value.selectedOptions[0].text : selectedValue
+  } else if (value && value.value) {
+    // 备用方案：直接提取value属性
+    selectedValue = value.value
+    displayText = value.text || selectedValue
+  } else if (typeof value === 'string') {
+    // 如果是字符串，直接使用
+    selectedValue = value
+    displayText = value
+  }
+  
   form.sport = selectedValue
-  console.log('球种已选择:', form.sport, '显示文本:', displayText)
+  console.log('球种已选择:', selectedValue, '显示文本:', displayText)
   showSportPicker.value = false
 }
 

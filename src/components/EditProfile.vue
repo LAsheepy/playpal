@@ -206,25 +206,45 @@ const badmintonLevelOptions = [
 
 // 选择器确认事件
 const onGenderConfirm = (value) => {
-  const selectedValue = value.value || value
+  // 处理Proxy对象，提取实际的值
+  let selectedValue = ''
+  
+  if (value && value.selectedValues && value.selectedValues.length > 0) {
+    selectedValue = value.selectedValues[0]
+  } else if (value && value.value) {
+    selectedValue = value.value
+  } else if (typeof value === 'string') {
+    selectedValue = value
+  }
+  
   form.gender = selectedValue
-  console.log('性别已选择:', form.gender)
+  console.log('性别已选择:', selectedValue)
   showGenderPicker.value = false
 }
 
 const onLevelConfirm = (sport, value) => {
-  const selectedValue = value.value || value
+  // 处理Proxy对象，提取实际的值
+  let selectedValue = ''
+  
+  if (value && value.selectedValues && value.selectedValues.length > 0) {
+    selectedValue = value.selectedValues[0]
+  } else if (value && value.value) {
+    selectedValue = value.value
+  } else if (typeof value === 'string') {
+    selectedValue = value
+  }
+  
   if (sport === 'pickleball') {
     form.pickleballLevel = selectedValue
-    console.log('匹克球水平已选择:', form.pickleballLevel)
+    console.log('匹克球水平已选择:', selectedValue)
     showPickleballPicker.value = false
   } else if (sport === 'tennis') {
     form.tennisLevel = selectedValue
-    console.log('网球水平已选择:', form.tennisLevel)
+    console.log('网球水平已选择:', selectedValue)
     showTennisPicker.value = false
   } else if (sport === 'badminton') {
     form.badmintonLevel = selectedValue
-    console.log('羽毛球水平已选择:', form.badmintonLevel)
+    console.log('羽毛球水平已选择:', selectedValue)
     showBadmintonPicker.value = false
   }
 }
