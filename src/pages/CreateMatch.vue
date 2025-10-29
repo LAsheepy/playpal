@@ -54,7 +54,7 @@
           />
           
           <van-popup v-model:show="showTimePicker" position="bottom">
-            <van-date-time-picker
+            <van-datetime-picker
               v-model="currentTime"
               type="datetime"
               title="选择时间"
@@ -149,8 +149,7 @@ import {
   Popup as VanPopup,
   Picker as VanPicker,
   Button as VanButton,
-  Stepper as VanStepper,
-  DateTimePicker
+  Stepper as VanStepper
 } from 'vant'
 
 const router = useRouter()
