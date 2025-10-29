@@ -67,7 +67,7 @@
                   <div class="picker-column">
                     <span class="picker-label">年</span>
                     <van-picker
-                      v-model="selectedYear"
+                      :model-value="[selectedYear]"
                       :columns="yearOptions"
                       @change="onYearChange"
                       value-key="text"
@@ -76,7 +76,7 @@
                   <div class="picker-column">
                     <span class="picker-label">月</span>
                     <van-picker
-                      v-model="selectedMonth"
+                      :model-value="[selectedMonth]"
                       :columns="monthOptions"
                       @change="onMonthChange"
                       value-key="text"
@@ -85,7 +85,7 @@
                   <div class="picker-column">
                     <span class="picker-label">日</span>
                     <van-picker
-                      v-model="selectedDay"
+                      :model-value="[selectedDay]"
                       :columns="dayOptions"
                       @change="onDayChange"
                       value-key="text"
@@ -94,7 +94,7 @@
                   <div class="picker-column">
                     <span class="picker-label">时</span>
                     <van-picker
-                      v-model="selectedHour"
+                      :model-value="[selectedHour]"
                       :columns="hourOptions"
                       @change="onHourChange"
                       value-key="text"
@@ -103,7 +103,7 @@
                   <div class="picker-column">
                     <span class="picker-label">分</span>
                     <van-picker
-                      v-model="selectedMinute"
+                      :model-value="[selectedMinute]"
                       :columns="minuteOptions"
                       @change="onMinuteChange"
                       value-key="text"
@@ -315,7 +315,7 @@ const updateFormTime = () => {
 }
 
 // 年份变化处理
-const onYearChange = (value) => {
+const onYearChange = (value, index) => {
   selectedYear.value = value.selectedValues ? value.selectedValues[0] : value.value
   if (selectedMonth.value) {
     generateDayOptions(selectedYear.value, selectedMonth.value)
@@ -324,7 +324,7 @@ const onYearChange = (value) => {
 }
 
 // 月份变化处理
-const onMonthChange = (value) => {
+const onMonthChange = (value, index) => {
   selectedMonth.value = value.selectedValues ? value.selectedValues[0] : value.value
   if (selectedYear.value) {
     generateDayOptions(selectedYear.value, selectedMonth.value)
@@ -333,19 +333,19 @@ const onMonthChange = (value) => {
 }
 
 // 日期变化处理
-const onDayChange = (value) => {
+const onDayChange = (value, index) => {
   selectedDay.value = value.selectedValues ? value.selectedValues[0] : value.value
   updateFormTime()
 }
 
 // 小时变化处理
-const onHourChange = (value) => {
+const onHourChange = (value, index) => {
   selectedHour.value = value.selectedValues ? value.selectedValues[0] : value.value
   updateFormTime()
 }
 
 // 分钟变化处理
-const onMinuteChange = (value) => {
+const onMinuteChange = (value, index) => {
   selectedMinute.value = value.selectedValues ? value.selectedValues[0] : value.value
   updateFormTime()
 }
