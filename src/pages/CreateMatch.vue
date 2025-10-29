@@ -42,77 +42,66 @@
 
         <!-- 时间地点 -->
         <van-cell-group title="时间地点">
-          <van-field
-            readonly
-            clickable
-            name="time"
-            label="时间"
-            :value="timeDisplay"
-            placeholder="请选择时间"
-            @click="showTimePicker = true"
-            :rules="[{ required: true, message: '请选择时间' }]"
-          />
-          
-          <van-popup v-model:show="showTimePicker" position="bottom" :style="{ height: '50%' }" round>
-            <div class="time-picker-container">
-              <div class="time-picker-header">
-                <span class="picker-title">选择时间</span>
-                <div>
-                  <van-button size="small" plain @click="showTimePicker = false" style="margin-right: 8px;">取消</van-button>
-                  <van-button size="small" type="primary" @click="confirmTime">确定</van-button>
-                </div>
-              </div>
-              <div class="time-picker-wrapper">
-                <div class="picker-row-horizontal">
-                  <div class="picker-column">
-                    <span class="picker-label">年</span>
-                    <van-picker
-                      :model-value="[selectedYear]"
-                      :columns="yearOptions"
-                      @change="onYearChange"
-                      value-key="text"
-                    />
-                  </div>
-                  <div class="picker-column">
-                    <span class="picker-label">月</span>
-                    <van-picker
-                      :model-value="[selectedMonth]"
-                      :columns="monthOptions"
-                      @change="onMonthChange"
-                      value-key="text"
-                    />
-                  </div>
-                  <div class="picker-column">
-                    <span class="picker-label">日</span>
-                    <van-picker
-                      :model-value="[selectedDay]"
-                      :columns="dayOptions"
-                      @change="onDayChange"
-                      value-key="text"
-                    />
-                  </div>
-                  <div class="picker-column">
-                    <span class="picker-label">时</span>
-                    <van-picker
-                      :model-value="[selectedHour]"
-                      :columns="hourOptions"
-                      @change="onHourChange"
-                      value-key="text"
-                    />
-                  </div>
-                  <div class="picker-column">
-                    <span class="picker-label">分</span>
-                    <van-picker
-                      :model-value="[selectedMinute]"
-                      :columns="minuteOptions"
-                      @change="onMinuteChange"
-                      value-key="text"
-                    />
-                  </div>
-                </div>
-              </div>
+          <div class="time-input-group">
+            <div class="time-input-row">
+              <van-field
+                v-model="form.year"
+                name="year"
+                label="年"
+                placeholder="2024"
+                type="number"
+                :rules="[{ required: true, message: '请输入年份' }]"
+                @blur="validateYear"
+              />
+              <span class="time-unit">年</span>
+              <van-field
+                v-model="form.month"
+                name="month"
+                label="月"
+                placeholder="12"
+                type="number"
+                :rules="[{ required: true, message: '请输入月份' }]"
+                @blur="validateMonth"
+              />
+              <span class="time-unit">月</span>
+              <van-field
+                v-model="form.day"
+                name="day"
+                label="日"
+                placeholder="25"
+                type="number"
+                :rules="[{ required: true, message: '请输入日期' }]"
+                @blur="validateDay"
+              />
+              <span class="time-unit">日</span>
             </div>
-          </van-popup>
+            <div class="time-input-row">
+              <van-field
+                v-model="form.hour"
+                name="hour"
+                label="时"
+                placeholder="14"
+                type="number"
+                :rules="[{ required: true, message: '请输入小时' }]"
+                @blur="validateHour"
+              />
+              <span class="time-unit">时</span>
+              <van-field
+                v-model="form.minute"
+                name="minute"
+                label="分"
+                placeholder="30"
+                type="number"
+                :rules="[{ required: true, message: '请输入分钟' }]"
+                @blur="validateMinute"
+              />
+              <span class="time-unit">分</span>
+            </div>
+            <div class="time-validation">
+              <span v-if="timeValidationMessage" class="validation-message">{{ timeValidationMessage }}</span>
+              <span v-else class="validation-success">✓ 时间格式正确</span>
+            </div>
+          </div>
           
           <van-field
             v-model="form.location"
@@ -208,11 +197,18 @@ const userStore = useUserStore()
 const form = reactive({
   title: '',
   sport: '',
-  time: '',
+  year: '',
+  month: '',
+  day: '',
+  hour: '',
+  minute: '',
   location: '',
   maxPlayers: 4,
   description: ''
 })
+
+// 时间验证消息
+const timeValidationMessage = ref('')
 
 // 计算属性：显示人数上限
 const maxPlayersDisplay = computed(() => {
@@ -221,63 +217,10 @@ const maxPlayersDisplay = computed(() => {
 
 // 选择器状态
 const showSportPicker = ref(false)
-const showTimePicker = ref(false)
 const showPlayerPicker = ref(false)
 
 // 临时数据
 const tempPlayerCount = ref(4)
-
-// 时间选择器数据
-const selectedYear = ref('')
-const selectedMonth = ref('')
-const selectedDay = ref('')
-const selectedHour = ref('')
-const selectedMinute = ref('')
-
-// 时间选项数据
-const yearOptions = ref([])
-const monthOptions = ref([])
-const dayOptions = ref([])
-const hourOptions = ref([])
-const minuteOptions = ref([])
-
-// 生成时间选项
-const generateTimeOptions = () => {
-  // 生成年份选项（当前年份到5年后）
-  const currentYear = new Date().getFullYear()
-  yearOptions.value = []
-  for (let i = 0; i <= 5; i++) {
-    const year = currentYear + i
-    yearOptions.value.push({ text: year + '年', value: year })
-  }
-  
-  // 生成月份选项
-  monthOptions.value = []
-  for (let i = 1; i <= 12; i++) {
-    monthOptions.value.push({ text: i + '月', value: i })
-  }
-  
-  // 生成小时选项
-  hourOptions.value = []
-  for (let i = 0; i <= 23; i++) {
-    hourOptions.value.push({ text: i.toString().padStart(2, '0') + '时', value: i })
-  }
-  
-  // 生成分钟选项
-  minuteOptions.value = []
-  for (let i = 0; i <= 59; i += 5) {
-    minuteOptions.value.push({ text: i.toString().padStart(2, '0') + '分', value: i })
-  }
-}
-
-// 生成日期选项
-const generateDayOptions = (year, month) => {
-  dayOptions.value = []
-  const daysInMonth = new Date(year, month, 0).getDate()
-  for (let i = 1; i <= daysInMonth; i++) {
-    dayOptions.value.push({ text: i + '日', value: i })
-  }
-}
 
 // 初始化表单数据
 const initFormData = () => {
@@ -285,69 +228,142 @@ const initFormData = () => {
   form.maxPlayers = 4
   tempPlayerCount.value = 4
   
-  // 生成时间选项
-  generateTimeOptions()
-  
   // 设置默认时间为当前系统时间
   const currentTime = new Date()
+  form.year = currentTime.getFullYear().toString()
+  form.month = (currentTime.getMonth() + 1).toString()
+  form.day = currentTime.getDate().toString()
+  form.hour = currentTime.getHours().toString()
+  form.minute = currentTime.getMinutes().toString()
   
-  // 设置默认时间选择器值
-  selectedYear.value = currentTime.getFullYear()
-  selectedMonth.value = currentTime.getMonth() + 1
-  selectedDay.value = currentTime.getDate()
-  selectedHour.value = currentTime.getHours()
-  selectedMinute.value = Math.floor(currentTime.getMinutes() / 5) * 5
+  // 验证时间格式
+  validateTime()
+}
+
+// 验证年份
+const validateYear = () => {
+  const year = parseInt(form.year)
+  const currentYear = new Date().getFullYear()
   
-  // 生成日期选项
-  generateDayOptions(selectedYear.value, selectedMonth.value)
+  if (!form.year || isNaN(year)) {
+    timeValidationMessage.value = '请输入有效的年份'
+    return false
+  }
   
-  // 设置表单时间
-  updateFormTime()
-}
-
-// 更新表单时间
-const updateFormTime = () => {
-  if (selectedYear.value && selectedMonth.value && selectedDay.value && selectedHour.value !== undefined && selectedMinute.value !== undefined) {
-    const date = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value)
-    form.time = date.toISOString()
-    console.log('时间已更新:', form.time)
+  if (year < currentYear || year > currentYear + 5) {
+    timeValidationMessage.value = '年份应在' + currentYear + '到' + (currentYear + 5) + '之间'
+    return false
   }
+  
+  validateTime()
+  return true
 }
 
-// 年份变化处理
-const onYearChange = (value, index) => {
-  selectedYear.value = value.selectedValues ? value.selectedValues[0] : value.value
-  if (selectedMonth.value) {
-    generateDayOptions(selectedYear.value, selectedMonth.value)
-    updateFormTime()
+// 验证月份
+const validateMonth = () => {
+  const month = parseInt(form.month)
+  
+  if (!form.month || isNaN(month) || month < 1 || month > 12) {
+    timeValidationMessage.value = '请输入有效的月份（1-12）'
+    return false
   }
+  
+  validateTime()
+  return true
 }
 
-// 月份变化处理
-const onMonthChange = (value, index) => {
-  selectedMonth.value = value.selectedValues ? value.selectedValues[0] : value.value
-  if (selectedYear.value) {
-    generateDayOptions(selectedYear.value, selectedMonth.value)
-    updateFormTime()
+// 验证日期
+const validateDay = () => {
+  const day = parseInt(form.day)
+  const year = parseInt(form.year)
+  const month = parseInt(form.month)
+  
+  if (!form.day || isNaN(day) || day < 1 || day > 31) {
+    timeValidationMessage.value = '请输入有效的日期（1-31）'
+    return false
   }
+  
+  // 验证具体月份的天数
+  if (year && month) {
+    const daysInMonth = new Date(year, month, 0).getDate()
+    if (day > daysInMonth) {
+      timeValidationMessage.value = month + '月最多有' + daysInMonth + '天'
+      return false
+    }
+  }
+  
+  validateTime()
+  return true
 }
 
-// 日期变化处理
-const onDayChange = (value, index) => {
-  selectedDay.value = value.selectedValues ? value.selectedValues[0] : value.value
-  updateFormTime()
+// 验证小时
+const validateHour = () => {
+  const hour = parseInt(form.hour)
+  
+  if (!form.hour || isNaN(hour) || hour < 0 || hour > 23) {
+    timeValidationMessage.value = '请输入有效的小时（0-23）'
+    return false
+  }
+  
+  validateTime()
+  return true
 }
 
-// 小时变化处理
-const onHourChange = (value, index) => {
-  selectedHour.value = value.selectedValues ? value.selectedValues[0] : value.value
-  updateFormTime()
+// 验证分钟
+const validateMinute = () => {
+  const minute = parseInt(form.minute)
+  
+  if (!form.minute || isNaN(minute) || minute < 0 || minute > 59) {
+    timeValidationMessage.value = '请输入有效的分钟（0-59）'
+    return false
+  }
+  
+  validateTime()
+  return true
 }
 
-// 分钟变化处理
-const onMinuteChange = (value, index) => {
-  selectedMinute.value = value.selectedValues ? value.selectedValues[0] : value.value
-  updateFormTime()
+// 验证完整时间
+const validateTime = () => {
+  if (!form.year || !form.month || !form.day || !form.hour || !form.minute) {
+    timeValidationMessage.value = '请完整填写时间信息'
+    return false
+  }
+  
+  const year = parseInt(form.year)
+  const month = parseInt(form.month)
+  const day = parseInt(form.day)
+  const hour = parseInt(form.hour)
+  const minute = parseInt(form.minute)
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
+    timeValidationMessage.value = '请填写有效的时间格式'
+    return false
+  }
+  
+  // 验证日期有效性
+  const selectedTime = new Date(year, month - 1, day, hour, minute)
+  if (isNaN(selectedTime.getTime())) {
+    timeValidationMessage.value = '时间格式无效'
+    return false
+  }
+  
+  // 验证是否为未来时间
+  const currentTime = new Date()
+  if (selectedTime <= currentTime) {
+    timeValidationMessage.value = '请选择未来的时间'
+    return false
+  }
+  
+  // 验证时间不能超过一年
+  const maxTime = new Date()
+  maxTime.setFullYear(maxTime.getFullYear() + 1)
+  if (selectedTime > maxTime) {
+    timeValidationMessage.value = '时间不能超过一年后'
+    return false
+  }
+  
+  timeValidationMessage.value = ''
+  return true
 }
 
 // 选项数据
@@ -382,41 +398,7 @@ const onSportConfirm = (value) => {
   showSportPicker.value = false
 }
 
-// 确认时间选择
-const confirmTime = () => {
-  // 验证时间是否完整选择
-  if (!selectedYear.value || !selectedMonth.value || !selectedDay.value || selectedHour.value === undefined || selectedMinute.value === undefined) {
-    showToast('请完整选择时间')
-    return
-  }
-  
-  // 验证时间格式和有效性
-  const selectedTime = new Date(selectedYear.value, selectedMonth.value - 1, selectedDay.value, selectedHour.value, selectedMinute.value)
-  const currentTime = new Date()
-  
-  if (isNaN(selectedTime.getTime())) {
-    showToast('时间格式无效，请重新选择')
-    return
-  }
-  
-  // 允许选择当前时间（不强制要求未来时间）
-  if (selectedTime < currentTime) {
-    showToast('请选择当前或未来的时间')
-    return
-  }
-  
-  // 验证时间不能超过一年
-  const maxTime = new Date()
-  maxTime.setFullYear(maxTime.getFullYear() + 1)
-  if (selectedTime > maxTime) {
-    showToast('时间不能超过一年后')
-    return
-  }
-  
-  form.time = selectedTime.toISOString()
-  console.log('时间已选择:', form.time)
-  showTimePicker.value = false
-}
+
 
 // 确认人数选择
 const confirmPlayerCount = () => {
@@ -436,26 +418,7 @@ const cancelPlayerCount = () => {
   showPlayerPicker.value = false
 }
 
-// 计算属性：显示时间
-const timeDisplay = computed(() => {
-  if (!form.time) return '请选择时间'
-  
-  try {
-    const date = new Date(form.time)
-    if (isNaN(date.getTime())) return '时间格式错误'
-    
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch (error) {
-    console.error('时间格式化错误:', error)
-    return '时间格式错误'
-  }
-})
+
 
 // 提交表单
 const onSubmit = async () => {
@@ -477,7 +440,11 @@ const onSubmit = async () => {
     const requiredFields = [
       { field: form.title, message: '请输入球局标题' },
       { field: form.sport, message: '请选择球种' },
-      { field: form.time, message: '请选择时间' },
+      { field: form.year, message: '请输入年份' },
+      { field: form.month, message: '请输入月份' },
+      { field: form.day, message: '请输入日期' },
+      { field: form.hour, message: '请输入小时' },
+      { field: form.minute, message: '请输入分钟' },
       { field: form.location, message: '请输入地点' },
       { field: form.maxPlayers, message: '请选择人数上限' }
     ]
@@ -509,24 +476,8 @@ const onSubmit = async () => {
     }
 
     // 验证时间格式和有效性
-    const selectedTime = new Date(form.time)
-    const currentTime = new Date()
-    
-    if (isNaN(selectedTime.getTime())) {
-      showToast('时间格式无效，请重新选择')
-      return
-    }
-    
-    if (selectedTime <= currentTime) {
-      showToast('请选择未来的时间')
-      return
-    }
-
-    // 验证时间不能超过一年
-    const maxTime = new Date()
-    maxTime.setFullYear(maxTime.getFullYear() + 1)
-    if (selectedTime > maxTime) {
-      showToast('时间不能超过一年后')
+    if (!validateTime()) {
+      showToast(timeValidationMessage.value || '时间格式无效')
       return
     }
 
@@ -646,57 +597,7 @@ onMounted(() => {
   height: 200px;
 }
 
-.picker-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
 
-.picker-label {
-  width: 100%;
-  font-size: 12px;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  background: #f5f5f5;
-  padding: 6px 4px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-:deep(.van-picker) {
-  width: 100%;
-  height: 100%;
-}
-
-:deep(.van-picker-column) {
-  font-size: 12px;
-}
-
-:deep(.van-picker) {
-  flex: 1;
-}
-
-:deep(.van-picker-column) {
-  font-size: 14px;
-}
-
-:deep(.van-picker__mask) {
-  background-image: 
-    linear-gradient(180deg, hsla(0, 0%, 100%, 0.9), hsla(0, 0%, 100%, 0.4)),
-    linear-gradient(0deg, hsla(0, 0%, 100%, 0.9), hsla(0, 0%, 100%, 0.4));
-}
-
-:deep(.van-picker-column__item) {
-  color: #333;
-}
-
-:deep(.van-picker-column__item--selected) {
-  color: #1989fa;
-  font-weight: bold;
-}
 
 .player-picker-container {
   background: white;
@@ -722,5 +623,61 @@ onMounted(() => {
   font-size: 18px;
   font-weight: bold;
   color: #1989fa;
+}
+
+/* 时间输入框样式 */
+.time-input-group {
+  padding: 16px;
+}
+
+.time-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.time-input-row .van-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-input-row .van-field__label {
+  width: auto;
+  min-width: 20px;
+  text-align: center;
+  margin-right: 8px;
+}
+
+.time-unit {
+  font-size: 14px;
+  color: #666;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
+
+.time-validation {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.validation-message {
+  color: #ee0a24;
+  font-size: 12px;
+}
+
+.validation-success {
+  color: #07c160;
+  font-size: 12px;
+}
+
+/* 调整输入框样式 */
+.time-input-row .van-field__control {
+  text-align: center;
+}
+
+.time-input-row .van-field__body {
+  min-height: 40px;
 }
 </style>
