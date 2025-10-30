@@ -257,12 +257,24 @@ const goBack = () => {
   router.back()
 }
 
-onMounted(() => {
-  const matchId = parseInt(route.params.id)
-  matchDetail.value = matchStore.getMatchDetail(matchId)
-  
-  if (!matchDetail.value) {
-    showToast('球局不存在')
+onMounted(async () => {
+  try {
+    const matchId = route.params.id
+    console.log('开始获取球局详情，ID:', matchId)
+    
+    const result = await matchStore.getMatchDetail(matchId)
+    
+    if (result.success) {
+      matchDetail.value = result.data
+      console.log('球局详情加载成功:', matchDetail.value)
+    } else {
+      console.error('获取球局详情失败:', result.error)
+      showToast('球局不存在或加载失败')
+      router.back()
+    }
+  } catch (error) {
+    console.error('球局详情页面加载异常:', error)
+    showToast('加载失败，请重试')
     router.back()
   }
 })

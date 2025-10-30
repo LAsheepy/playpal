@@ -338,6 +338,12 @@ export const useMatchStore = defineStore('match', () => {
         throw new Error('球局不存在')
       }
       
+      // 添加详细调试信息
+      console.log('=== 获取球局详情数据 ===')
+      console.log('原始数据:', data)
+      console.log('creator数据:', data.creator)
+      console.log('participants数据:', data.participants)
+      
       return {
         success: true,
         data: {
