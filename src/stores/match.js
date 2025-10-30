@@ -117,11 +117,21 @@ export const useMatchStore = defineStore('match', () => {
         throw new Error(errorMessage.value)
       }
       
-      // 验证必填字段
-      if (!matchData.title || !matchData.sport || !matchData.time || !matchData.location || !matchData.maxPlayers) {
+      // 验证必填字段 - 添加详细调试信息
+      console.log('=== match store验证必填字段 ===')
+      console.log('title:', matchData.title, '类型:', typeof matchData.title)
+      console.log('sport:', matchData.sport, '类型:', typeof matchData.sport)
+      console.log('time:', matchData.time, '类型:', typeof matchData.time)
+      console.log('location:', matchData.location, '类型:', typeof matchData.location)
+      console.log('max_players:', matchData.max_players, '类型:', typeof matchData.max_players)
+      
+      if (!matchData.title || !matchData.sport || !matchData.time || !matchData.location || !matchData.max_players) {
+        console.log('❌ 验证失败: 字段不完整')
         errorMessage.value = '请完善所有必填信息'
         throw new Error(errorMessage.value)
       }
+      
+      console.log('✅ match store验证通过')
       
       // 确保时间格式正确（转换为ISO字符串）
       const matchTime = new Date(matchData.time)
@@ -135,7 +145,7 @@ export const useMatchStore = defineStore('match', () => {
         sport: matchData.sport,
         time: matchTime.toISOString(),
         location: matchData.location.trim(),
-        max_players: parseInt(matchData.maxPlayers),
+        max_players: parseInt(matchData.max_players),
         description: matchData.description ? matchData.description.trim() : '',
         creator_id: userStore.userInfo.id
       }
