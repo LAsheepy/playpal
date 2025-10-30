@@ -563,7 +563,24 @@ const onSubmit = async () => {
       return
     }
 
-    const result = await matchStore.createMatch(form)
+    // 将时间字段合并成完整的time字段
+    const timeString = `${form.year}-${form.month.padStart(2, '0')}-${form.day.padStart(2, '0')}T${form.hour.padStart(2, '0')}:${form.minute.padStart(2, '0')}:00`
+    console.log('生成的时间字符串:', timeString)
+    
+    // 创建完整的数据对象，确保字段名与API期望一致
+    const matchData = {
+      title: form.title,
+      sport: form.sport,
+      time: timeString,
+      location: form.location,
+      max_players: form.maxPlayers, // 注意：API期望的是max_players，不是maxPlayers
+      description: form.description || '',
+      creator_id: userStore.userInfo.id
+    }
+    
+    console.log('提交的完整数据:', matchData)
+    
+    const result = await matchStore.createMatch(matchData)
     
     if (result.success) {
       showToast({
