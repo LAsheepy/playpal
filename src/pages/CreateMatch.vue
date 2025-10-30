@@ -24,15 +24,11 @@
             clickable
             name="sport"
             label="球种"
-            :model-value="form.sport"
+            v-model="form.sport"
             placeholder="请选择球种"
             @click="showSportPicker = true"
             :rules="[{ required: true, message: '请选择球种' }]"
-          >
-            <template #input>
-              <span>{{ form.sport || '请选择球种' }}</span>
-            </template>
-          </van-field>
+          />
           
           <van-popup v-model:show="showSportPicker" position="bottom">
             <van-picker
@@ -40,6 +36,7 @@
               @confirm="onSportConfirm"
               @cancel="showSportPicker = false"
               :default-index="0"
+              value-key="text"
             />
           </van-popup>
         </van-cell-group>
@@ -228,6 +225,8 @@ const tempPlayerCount = ref(4)
 
 // 初始化表单数据
 const initFormData = () => {
+  console.log('=== 初始化表单数据 ===')
+  
   // 设置默认人数上限
   form.maxPlayers = 4
   tempPlayerCount.value = 4
@@ -242,12 +241,19 @@ const initFormData = () => {
   form.hour = currentTime.getHours().toString()
   form.minute = currentTime.getMinutes().toString()
   
+  // 设置默认球种
+  form.sport = '匹克球'
+  
   console.log('初始化表单数据:', {
+    title: form.title,
+    sport: form.sport,
     year: form.year,
     month: form.month,
     day: form.day,
     hour: form.hour,
-    minute: form.minute
+    minute: form.minute,
+    location: form.location,
+    maxPlayers: form.maxPlayers
   })
   
   // 验证时间格式
@@ -405,33 +411,43 @@ const sportOptions = [
 ]
 
 // 球种确认
-const onSportConfirm = (value) => {
-  console.log('球种选择器返回值:', value)
+const onSportConfirm = (value, index) => {
+  console.log('球种选择器返回值:', value, '索引:', index)
   
-  // 处理Vant Picker返回的对象
   let selectedValue = ''
   
-  if (value && value.selectedValues && value.selectedValues.length > 0) {
-    // 从selectedValues数组中获取第一个值
-    selectedValue = value.selectedValues[0]
-  } else if (value && value.value) {
-    // 直接获取value属性
-    selectedValue = value.value
+  // 处理Vant Picker返回的不同格式
+  if (Array.isArray(value)) {
+    // 如果是数组，取第一个值
+    selectedValue = value[0]
+  } else if (value && typeof value === 'object') {
+    // 如果是对象，尝试提取值
+    if (value.selectedValues && Array.isArray(value.selectedValues)) {
+      selectedValue = value.selectedValues[0]
+    } else if (value.value) {
+      selectedValue = value.value
+    } else if (value.text) {
+      selectedValue = value.text
+    }
   } else if (typeof value === 'string') {
     // 如果是字符串，直接使用
     selectedValue = value
-  } else if (value && typeof value === 'object') {
-    // 尝试从对象中提取值
-    selectedValue = value.text || value.value || ''
   }
   
+  console.log('提取的球种值:', selectedValue)
+  
   // 确保选择的值在有效选项中
-  const validOption = sportOptions.find(option => option.value === selectedValue || option.text === selectedValue)
+  const validOption = sportOptions.find(option => 
+    option.value === selectedValue || option.text === selectedValue
+  )
+  
   if (validOption) {
     form.sport = validOption.value
-    console.log('球种已选择:', form.sport)
+    console.log('✅ 球种已选择:', form.sport)
   } else {
-    console.warn('无效的球种选择:', selectedValue)
+    // 如果无法匹配，使用默认值
+    form.sport = sportOptions[0].value
+    console.warn('❌ 无效的球种选择，使用默认值:', form.sport)
   }
   
   showSportPicker.value = false
@@ -462,8 +478,12 @@ const cancelPlayerCount = () => {
 // 提交表单
 const onSubmit = async () => {
   try {
+    console.log('=== 开始提交表单验证 ===')
+    console.log('当前表单数据:', JSON.parse(JSON.stringify(form)))
+    
     // 验证登录状态
     if (!userStore.isLoggedIn) {
+      console.log('验证失败: 用户未登录')
       showToast('请先登录')
       router.push('/login')
       return
@@ -471,28 +491,34 @@ const onSubmit = async () => {
 
     // 游客模式下不允许创建球局
     if (userStore.isGuestMode) {
+      console.log('验证失败: 游客模式')
       showToast('游客模式下无法创建球局，请注册账号后使用完整功能')
       return
     }
 
     // 验证必填字段
     const requiredFields = [
-      { field: form.title, message: '请输入球局标题' },
-      { field: form.sport, message: '请选择球种' },
-      { field: form.year, message: '请输入年份' },
-      { field: form.month, message: '请输入月份' },
-      { field: form.day, message: '请输入日期' },
-      { field: form.hour, message: '请输入小时' },
-      { field: form.minute, message: '请输入分钟' },
-      { field: form.location, message: '请输入地点' }
+      { field: form.title, name: 'title', message: '请输入球局标题' },
+      { field: form.sport, name: 'sport', message: '请选择球种' },
+      { field: form.year, name: 'year', message: '请输入年份' },
+      { field: form.month, name: 'month', message: '请输入月份' },
+      { field: form.day, name: 'day', message: '请输入日期' },
+      { field: form.hour, name: 'hour', message: '请输入小时' },
+      { field: form.minute, name: 'minute', message: '请输入分钟' },
+      { field: form.location, name: 'location', message: '请输入地点' }
     ]
 
-    for (const { field, message } of requiredFields) {
+    console.log('=== 开始验证必填字段 ===')
+    for (const { field, name, message } of requiredFields) {
+      console.log(`验证字段 ${name}:`, `值: "${field}"`, `类型: ${typeof field}`, `长度: ${field ? field.length : 0}`)
       if (!field || field.toString().trim() === '') {
+        console.log(`❌ 验证失败: 字段 ${name} 为空或无效`)
         showToast(message)
         return
       }
+      console.log(`✅ 字段 ${name} 验证通过`)
     }
+    console.log('=== 所有必填字段验证通过 ===')
 
     // 验证人数上限
     if (!form.maxPlayers || form.maxPlayers < 1) {
