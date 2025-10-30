@@ -24,18 +24,22 @@
             clickable
             name="sport"
             label="球种"
-            v-model="form.sport"
+            :model-value="form.sport"
             placeholder="请选择球种"
             @click="showSportPicker = true"
             :rules="[{ required: true, message: '请选择球种' }]"
-          />
+          >
+            <template #input>
+              <span>{{ form.sport || '请选择球种' }}</span>
+            </template>
+          </van-field>
           
           <van-popup v-model:show="showSportPicker" position="bottom">
             <van-picker
               :columns="sportOptions"
               @confirm="onSportConfirm"
               @cancel="showSportPicker = false"
-              value-key="text"
+              :default-index="0"
             />
           </van-popup>
         </van-cell-group>
@@ -228,13 +232,23 @@ const initFormData = () => {
   form.maxPlayers = 4
   tempPlayerCount.value = 4
   
-  // 设置默认时间为当前系统时间
+  // 设置默认时间为当前系统时间（未来1小时）
   const currentTime = new Date()
+  currentTime.setHours(currentTime.getHours() + 1) // 设置为未来1小时
+  
   form.year = currentTime.getFullYear().toString()
   form.month = (currentTime.getMonth() + 1).toString()
   form.day = currentTime.getDate().toString()
   form.hour = currentTime.getHours().toString()
   form.minute = currentTime.getMinutes().toString()
+  
+  console.log('初始化表单数据:', {
+    year: form.year,
+    month: form.month,
+    day: form.day,
+    hour: form.hour,
+    minute: form.minute
+  })
   
   // 验证时间格式
   validateTime()
@@ -324,8 +338,17 @@ const validateMinute = () => {
 
 // 验证完整时间
 const validateTime = () => {
+  console.log('验证时间字段:', {
+    year: form.year,
+    month: form.month,
+    day: form.day,
+    hour: form.hour,
+    minute: form.minute
+  })
+  
   if (!form.year || !form.month || !form.day || !form.hour || !form.minute) {
     timeValidationMessage.value = '请完整填写时间信息'
+    console.log('时间验证失败: 字段不完整')
     return false
   }
   
@@ -337,6 +360,7 @@ const validateTime = () => {
   
   if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
     timeValidationMessage.value = '请填写有效的时间格式'
+    console.log('时间验证失败: 数字格式无效')
     return false
   }
   
@@ -344,6 +368,7 @@ const validateTime = () => {
   const selectedTime = new Date(year, month - 1, day, hour, minute)
   if (isNaN(selectedTime.getTime())) {
     timeValidationMessage.value = '时间格式无效'
+    console.log('时间验证失败: 日期对象无效')
     return false
   }
   
@@ -351,6 +376,10 @@ const validateTime = () => {
   const currentTime = new Date()
   if (selectedTime <= currentTime) {
     timeValidationMessage.value = '请选择未来的时间'
+    console.log('时间验证失败: 不是未来时间', {
+      selected: selectedTime.toISOString(),
+      current: currentTime.toISOString()
+    })
     return false
   }
   
@@ -359,10 +388,12 @@ const validateTime = () => {
   maxTime.setFullYear(maxTime.getFullYear() + 1)
   if (selectedTime > maxTime) {
     timeValidationMessage.value = '时间不能超过一年后'
+    console.log('时间验证失败: 超过一年')
     return false
   }
   
   timeValidationMessage.value = ''
+  console.log('时间验证成功')
   return true
 }
 
@@ -375,26 +406,34 @@ const sportOptions = [
 
 // 球种确认
 const onSportConfirm = (value) => {
-  // Vant Picker 返回的是Proxy对象，需要提取selectedValues数组的第一个值
-  let selectedValue = ''
-  let displayText = ''
+  console.log('球种选择器返回值:', value)
   
-  // 处理Proxy对象，提取实际的值
+  // 处理Vant Picker返回的对象
+  let selectedValue = ''
+  
   if (value && value.selectedValues && value.selectedValues.length > 0) {
+    // 从selectedValues数组中获取第一个值
     selectedValue = value.selectedValues[0]
-    displayText = value.selectedOptions && value.selectedOptions[0] ? value.selectedOptions[0].text : selectedValue
   } else if (value && value.value) {
-    // 备用方案：直接提取value属性
+    // 直接获取value属性
     selectedValue = value.value
-    displayText = value.text || selectedValue
   } else if (typeof value === 'string') {
     // 如果是字符串，直接使用
     selectedValue = value
-    displayText = value
+  } else if (value && typeof value === 'object') {
+    // 尝试从对象中提取值
+    selectedValue = value.text || value.value || ''
   }
   
-  form.sport = selectedValue
-  console.log('球种已选择:', selectedValue, '显示文本:', displayText)
+  // 确保选择的值在有效选项中
+  const validOption = sportOptions.find(option => option.value === selectedValue || option.text === selectedValue)
+  if (validOption) {
+    form.sport = validOption.value
+    console.log('球种已选择:', form.sport)
+  } else {
+    console.warn('无效的球种选择:', selectedValue)
+  }
+  
   showSportPicker.value = false
 }
 
@@ -445,15 +484,20 @@ const onSubmit = async () => {
       { field: form.day, message: '请输入日期' },
       { field: form.hour, message: '请输入小时' },
       { field: form.minute, message: '请输入分钟' },
-      { field: form.location, message: '请输入地点' },
-      { field: form.maxPlayers, message: '请选择人数上限' }
+      { field: form.location, message: '请输入地点' }
     ]
 
     for (const { field, message } of requiredFields) {
-      if (!field) {
+      if (!field || field.toString().trim() === '') {
         showToast(message)
         return
       }
+    }
+
+    // 验证人数上限
+    if (!form.maxPlayers || form.maxPlayers < 1) {
+      showToast('请选择人数上限')
+      return
     }
 
     // 验证球种选择是否有效
