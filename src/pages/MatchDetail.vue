@@ -207,7 +207,10 @@ const formatTime = (timeStr) => {
 // 加入球局
 const handleJoin = async () => {
   if (!userStore.isLoggedIn) {
-    showToast('请先登录')
+    showToast({
+      message: '请先登录',
+      className: 'custom-toast'
+    })
     router.push('/login')
     return
   }
@@ -220,11 +223,17 @@ const handleJoin = async () => {
   })
 
   if (success) {
-    showToast('加入成功')
+    showToast({
+      message: '加入成功',
+      className: 'custom-toast'
+    })
     // 刷新详情数据
     matchDetail.value = matchStore.getMatchDetail(matchDetail.value.id)
   } else {
-    showToast('加入失败，请重试')
+    showToast({
+      message: '加入失败，请重试',
+      className: 'custom-toast'
+    })
   }
 }
 
@@ -232,16 +241,23 @@ const handleJoin = async () => {
 const handleLeave = async () => {
   showConfirmDialog({
     title: '确认退出',
-    message: '确定要退出这个球局吗？'
+    message: '确定要退出这个球局吗？',
+    className: 'custom-dialog'
   }).then(() => {
     const success = matchStore.leaveMatch(matchDetail.value.id, userStore.userInfo.id)
     
     if (success) {
-      showToast('退出成功')
+      showToast({
+        message: '退出成功',
+        className: 'custom-toast'
+      })
       // 刷新详情数据
       matchDetail.value = matchStore.getMatchDetail(matchDetail.value.id)
     } else {
-      showToast('退出失败，请重试')
+      showToast({
+        message: '退出失败，请重试',
+        className: 'custom-toast'
+      })
     }
   })
 }
@@ -249,7 +265,17 @@ const handleLeave = async () => {
 // 查看参与人资料
 const viewParticipantProfile = (participant) => {
   // 跳转到用户资料页面，传递用户ID
-  router.push(`/user/${participant.id}`)
+  // 检查参与人ID是否为有效的UUID格式，如果不是则显示提示
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  
+  if (uuidRegex.test(participant.id)) {
+    router.push(`/user/${participant.id}`)
+  } else {
+    showToast({
+      message: '该用户资料暂不可用',
+      className: 'custom-toast'
+    })
+  }
 }
 
 // 返回
@@ -269,12 +295,18 @@ onMounted(async () => {
       console.log('球局详情加载成功:', matchDetail.value)
     } else {
       console.error('获取球局详情失败:', result.error)
-      showToast('球局不存在或加载失败')
+      showToast({
+      message: '球局不存在或加载失败',
+      className: 'custom-toast'
+    })
       router.back()
     }
   } catch (error) {
     console.error('球局详情页面加载异常:', error)
-    showToast('加载失败，请重试')
+    showToast({
+      message: '加载失败，请重试',
+      className: 'custom-toast'
+    })
     router.back()
   }
 })
@@ -457,4 +489,25 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
 }
+/* 自定义弹窗样式 */
+:deep(.custom-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-dialog) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-popup) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
 </style>

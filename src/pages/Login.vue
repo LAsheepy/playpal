@@ -51,12 +51,32 @@
             @click="onGuestLogin"
             class="guest-login-btn"
           >
-            🎯 游客体验
+            🎯 游客登录
           </van-button>
         </div>
         <div class="guest-notice">
-          <p>💡 无需注册，立即体验系统核心功能</p>
-          <p>⚠️ 游客模式下数据不会保存</p>
+          <p>💡 无需注册，立即体验</p>
+        </div>
+      </div>
+      
+      <!-- 管理员登录入口 -->
+      <div class="admin-login-section">
+        <div class="divider">
+          <span>管理员</span>
+        </div>
+        <div style="margin: 16px;">
+          <van-button 
+            round 
+            block 
+            type="warning" 
+            @click="onAdminLogin"
+            class="admin-login-btn"
+          >
+            🔧 管理员登录
+          </van-button>
+        </div>
+        <div class="admin-notice">
+          <p>⚙️ 访问数据总览和管理功能</p>
         </div>
       </div>
     </div>
@@ -95,7 +115,8 @@ const onSubmit = async () => {
       if (result.success) {
         showToast({
           message: '登录成功',
-          type: 'success'
+          type: 'success',
+          className: 'custom-toast'
         })
         // 跳转到首页
         setTimeout(() => {
@@ -104,7 +125,8 @@ const onSubmit = async () => {
       } else {
         showToast({
           message: result.error || '登录失败，请检查账号密码',
-          type: 'fail'
+          type: 'fail',
+          className: 'custom-toast'
         })
       }
     } else {
@@ -112,7 +134,8 @@ const onSubmit = async () => {
       if (result.success) {
         showToast({
           message: '注册成功',
-          type: 'success'
+          type: 'success',
+          className: 'custom-toast'
         })
         // 跳转到首页
         setTimeout(() => {
@@ -121,14 +144,16 @@ const onSubmit = async () => {
       } else {
         showToast({
           message: result.error || '注册失败，请重试',
-          type: 'fail'
+          type: 'fail',
+          className: 'custom-toast'
         })
       }
     }
   } catch (error) {
     showToast({
       message: '操作失败，请重试',
-      type: 'fail'
+      type: 'fail',
+      className: 'custom-toast'
     })
   }
 }
@@ -140,7 +165,8 @@ const onGuestLogin = async () => {
     if (result.success) {
       showToast({
         message: '游客模式已开启',
-        type: 'success'
+        type: 'success',
+        className: 'custom-toast'
       })
       // 跳转到首页
       setTimeout(() => {
@@ -149,13 +175,67 @@ const onGuestLogin = async () => {
     } else {
       showToast({
         message: result.error || '游客登录失败',
-        type: 'fail'
+        type: 'fail',
+        className: 'custom-toast'
       })
     }
   } catch (error) {
     showToast({
       message: '游客登录失败，请重试',
-      type: 'fail'
+      type: 'fail',
+      className: 'custom-toast'
+    })
+  }
+}
+
+// 管理员登录
+const onAdminLogin = () => {
+  // 弹出对话框让管理员输入账号密码
+  const adminEmail = prompt('请输入管理员邮箱：')
+  if (!adminEmail) return
+  
+  const adminPassword = prompt('请输入管理员密码：')
+  if (!adminPassword) return
+  
+  // 验证管理员凭据
+  if (adminEmail === 'admin@playpal.com' && adminPassword === 'admin123') {
+    // 使用管理员账号登录
+    handleAdminLogin(adminEmail, adminPassword)
+  } else {
+    showToast({
+      message: '管理员账号或密码错误',
+      type: 'fail',
+      className: 'custom-toast'
+    })
+  }
+}
+
+// 处理管理员登录
+const handleAdminLogin = async (email, password) => {
+  try {
+    const result = await userStore.login(email, password)
+    if (result.success) {
+      showToast({
+        message: '管理员登录成功',
+        type: 'success',
+        className: 'custom-toast'
+      })
+      // 跳转到管理员页面
+      setTimeout(() => {
+        router.push('/admin')
+      }, 1000)
+    } else {
+      showToast({
+        message: result.error || '管理员登录失败，请检查账号密码',
+        type: 'fail',
+        className: 'custom-toast'
+      })
+    }
+  } catch (error) {
+    showToast({
+      message: '管理员登录失败，请重试',
+      type: 'fail',
+      className: 'custom-toast'
     })
   }
 }
@@ -210,26 +290,15 @@ const onGuestLogin = async () => {
 
 /* 游客登录样式 */
 .guest-login-section {
-  margin-top: 30px;
+  margin-top: 0px;
   border-top: 1px solid #f0f0f0;
-  padding-top: 20px;
+  padding-top: 0px;
 }
 
 .divider {
   text-align: center;
-  margin: 20px 0;
+  margin: 2px 0;
   position: relative;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #f0f0f0;
-  z-index: 1;
 }
 
 .divider span {
@@ -257,5 +326,51 @@ const onGuestLogin = async () => {
 
 .guest-notice p {
   margin: 5px 0;
+}
+
+/* 管理员登录样式 */
+.admin-login-section {
+  margin-top: 2px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 2px;
+}
+
+.admin-login-btn {
+  border: 1px solid #ff976a;
+  color: #ff976a;
+  background: white;
+}
+
+.admin-notice {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.admin-notice p {
+  margin: 5px 0;
+}
+
+/* 自定义弹窗样式 */
+:deep(.custom-toast) {
+  color: #333 !important;
+  background-color: rgb(255, 255, 255) !important;
+}
+
+:deep(.van-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-dialog) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-popup) {
+  color: #333 !important;
+  background-color: white !important;
 }
 </style>

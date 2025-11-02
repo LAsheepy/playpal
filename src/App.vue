@@ -21,7 +21,7 @@ const activeTab = ref(0)
 
 // 不需要显示底部导航栏的页面
 const showTabBar = computed(() => {
-  const noTabBarRoutes = ['/login', '/my-matches', '/history', '/settings', '/user']
+  const noTabBarRoutes = ['/login', '/my-matches', '/history', '/settings', '/user', '/admin']
   return !noTabBarRoutes.some(routePath => route.path.startsWith(routePath))
 })
 

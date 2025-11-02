@@ -59,32 +59,51 @@ const goBack = () => {
 }
 
 const goToAccountSettings = () => {
-  showToast('账号设置功能开发中')
+  showToast({
+    message: '账号设置功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 const goToNotificationSettings = () => {
-  showToast('通知设置功能开发中')
+  showToast({
+    message: '通知设置功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 const goToPrivacySettings = () => {
-  showToast('隐私设置功能开发中')
+  showToast({
+    message: '隐私设置功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 const goToAbout = () => {
-  showToast('关于我们功能开发中')
+  showToast({
+    message: '关于我们功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 const goToHelp = () => {
-  showToast('帮助与反馈功能开发中')
+  showToast({
+    message: '帮助与反馈功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 const clearCache = () => {
   showConfirmDialog({
     title: '清除缓存',
-    message: '确定要清除所有缓存数据吗？'
+    message: '确定要清除所有缓存数据吗？',
+    className: 'custom-dialog'
   }).then(() => {
     localStorage.clear()
-    showToast('缓存清除成功')
+    showToast({
+      message: '缓存清除成功',
+      className: 'custom-toast'
+    })
   }).catch(() => {
     // 用户取消
   })
@@ -93,11 +112,15 @@ const clearCache = () => {
 const logout = () => {
   showConfirmDialog({
     title: '退出登录',
-    message: '确定要退出登录吗？'
+    message: '确定要退出登录吗？',
+    className: 'custom-dialog'
   }).then(() => {
     userStore.logout()
     router.push('/login')
-    showToast('退出登录成功')
+    showToast({
+      message: '退出登录成功',
+      className: 'custom-toast'
+    })
   }).catch(() => {
     // 用户取消
   })
@@ -121,4 +144,25 @@ const logout = () => {
 .action-btn {
   margin-bottom: 12px;
 }
+/* 自定义弹窗样式 */
+:deep(.custom-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-dialog) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-popup) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
 </style>

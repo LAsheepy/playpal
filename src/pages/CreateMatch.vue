@@ -459,7 +459,10 @@ const onSportConfirm = (value, index) => {
 const confirmPlayerCount = () => {
   // 验证人数范围
   if (tempPlayerCount.value < 1 || tempPlayerCount.value > 12) {
-    showToast('人数上限应在1-12人之间')
+    showToast({
+      message: '人数上限应在1-12人之间',
+      className: 'custom-toast'
+    })
     return
   }
   
@@ -484,7 +487,10 @@ const onSubmit = async () => {
     // 验证登录状态
     if (!userStore.isLoggedIn) {
       console.log('验证失败: 用户未登录')
-      showToast('请先登录')
+      showToast({
+      message: '请先登录',
+      className: 'custom-toast'
+    })
       router.push('/login')
       return
     }
@@ -492,7 +498,10 @@ const onSubmit = async () => {
     // 游客模式下不允许创建球局
     if (userStore.isGuestMode) {
       console.log('验证失败: 游客模式')
-      showToast('游客模式下无法创建球局，请注册账号后使用完整功能')
+      showToast({
+        message: '游客模式下无法创建球局，请注册账号后使用完整功能',
+        className: 'custom-toast'
+      })
       return
     }
 
@@ -513,7 +522,10 @@ const onSubmit = async () => {
       console.log(`验证字段 ${name}:`, `值: "${field}"`, `类型: ${typeof field}`, `长度: ${field ? field.length : 0}`)
       if (!field || field.toString().trim() === '') {
         console.log(`❌ 验证失败: 字段 ${name} 为空或无效`)
-        showToast(message)
+        showToast({
+          message: message,
+          className: 'custom-toast'
+        })
         return
       }
       console.log(`✅ 字段 ${name} 验证通过`)
@@ -522,44 +534,65 @@ const onSubmit = async () => {
 
     // 验证人数上限
     if (!form.maxPlayers || form.maxPlayers < 1) {
-      showToast('请选择人数上限')
+      showToast({
+        message: '请选择人数上限',
+        className: 'custom-toast'
+      })
       return
     }
 
     // 验证球种选择是否有效
     const validSports = ['匹克球', '网球', '羽毛球']
     if (!validSports.includes(form.sport)) {
-      showToast('请选择有效的球种')
+      showToast({
+        message: '请选择有效的球种',
+        className: 'custom-toast'
+      })
       return
     }
 
     // 验证标题长度
     if (form.title.length < 2 || form.title.length > 50) {
-      showToast('球局标题长度应在2-50个字符之间')
+      showToast({
+        message: '球局标题长度应在2-50个字符之间',
+        className: 'custom-toast'
+      })
       return
     }
 
     // 验证地点长度
     if (form.location.length < 2 || form.location.length > 100) {
-      showToast('地点长度应在2-100个字符之间')
+      showToast({
+        message: '地点长度应在2-100个字符之间',
+        className: 'custom-toast'
+      })
       return
     }
 
     // 验证时间格式和有效性
     if (!validateTime()) {
-      showToast(timeValidationMessage.value || '时间格式无效')
+      showToast({
+        message: timeValidationMessage.value || '时间格式无效',
+        className: 'custom-toast'
+      })
       return
     }
 
     // 验证人数范围
     if (form.maxPlayers < 1 || form.maxPlayers > 12) {
-      showToast('人数上限应在1-12人之间')
+      showToast({
+      message: '人数上限应在1-12人之间',
+      className: 'custom-toast'
+    })
       return
     }
 
     // 验证描述长度
     if (form.description && form.description.length > 200) {
-      showToast('描述长度不能超过200个字符')
+      showToast({
+        message: '描述长度不能超过200个字符',
+        className: 'custom-toast'
+      })
       return
     }
 
@@ -585,7 +618,8 @@ const onSubmit = async () => {
     if (result.success) {
       showToast({
         message: '创建成功',
-        type: 'success'
+        type: 'success',
+        className: 'custom-toast'
       })
 
       // 跳转到球局详情页
@@ -600,14 +634,16 @@ const onSubmit = async () => {
     } else {
       showToast({
         message: result.error || '创建失败，请重试',
-        type: 'fail'
+        type: 'fail',
+        className: 'custom-toast'
       })
     }
   } catch (error) {
     console.error('创建球局异常:', error)
     showToast({
       message: '创建失败，请检查网络连接后重试',
-      type: 'fail'
+      type: 'fail',
+      className: 'custom-toast'
     })
   }
 }
@@ -767,4 +803,25 @@ onMounted(() => {
 .time-input-row .van-field__body {
   min-height: 40px;
 }
+/* 自定义弹窗样式 */
+:deep(.custom-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-dialog) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-popup) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
 </style>

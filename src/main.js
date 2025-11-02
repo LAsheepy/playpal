@@ -14,6 +14,7 @@ import UserProfile from './pages/UserProfile.vue'
 import MyMatches from './pages/MyMatches.vue'
 import History from './pages/History.vue'
 import Settings from './pages/Settings.vue'
+import AdminDashboard from './pages/AdminDashboard.vue'
 
 // 路由配置
 const routes = [
@@ -26,7 +27,8 @@ const routes = [
   { path: '/user/:id', component: UserProfile },
   { path: '/my-matches', component: MyMatches },
   { path: '/history', component: History },
-  { path: '/settings', component: Settings }
+  { path: '/settings', component: Settings },
+  { path: '/admin', component: AdminDashboard }
 ]
 
 const router = createRouter({

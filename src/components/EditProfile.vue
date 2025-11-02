@@ -257,19 +257,28 @@ const handleSave = async () => {
     
     // 验证昵称
     if (!form.nickname || form.nickname.trim().length === 0) {
-      showToast('请输入昵称')
+      showToast({
+        message: '请输入昵称',
+        className: 'custom-toast'
+      })
       return
     }
     
     if (form.nickname.length < 2 || form.nickname.length > 20) {
-      showToast('昵称长度应在2-20个字符之间')
+      showToast({
+        message: '昵称长度应在2-20个字符之间',
+        className: 'custom-toast'
+      })
       return
     }
     
     // 验证昵称格式（只允许中文、英文、数字和下划线）
     const nicknameRegex = /^[\u4e00-\u9fa5a-zA-Z0-9_]+$/
     if (!nicknameRegex.test(form.nickname)) {
-      showToast('昵称只能包含中文、英文、数字和下划线')
+      showToast({
+        message: '昵称只能包含中文、英文、数字和下划线',
+        className: 'custom-toast'
+      })
       return
     }
     
@@ -277,14 +286,20 @@ const handleSave = async () => {
     if (form.age) {
       const age = parseInt(form.age)
       if (isNaN(age) || age < 1 || age > 100) {
-        showToast('请输入有效的年龄（1-100）')
+        showToast({
+        message: '请输入有效的年龄（1-100）',
+        className: 'custom-toast'
+      })
         return
       }
     }
     
     // 验证性别
     if (form.gender && !['男', '女'].includes(form.gender)) {
-      showToast('请选择有效的性别')
+      showToast({
+        message: '请选择有效的性别',
+        className: 'custom-toast'
+      })
       return
     }
     
@@ -296,23 +311,35 @@ const handleSave = async () => {
     }
     
     if (form.pickleballLevel && !validLevels.pickleball.includes(form.pickleballLevel)) {
-      showToast('请选择有效的匹克球水平')
+      showToast({
+        message: '请选择有效的匹克球水平',
+        className: 'custom-toast'
+      })
       return
     }
     
     if (form.tennisLevel && !validLevels.tennis.includes(form.tennisLevel)) {
-      showToast('请选择有效的网球水平')
+      showToast({
+        message: '请选择有效的网球水平',
+        className: 'custom-toast'
+      })
       return
     }
     
     if (form.badmintonLevel && !validLevels.badminton.includes(form.badmintonLevel)) {
-      showToast('请选择有效的羽毛球水平')
+      showToast({
+        message: '请选择有效的羽毛球水平',
+        className: 'custom-toast'
+      })
       return
     }
     
     // 验证个人简介长度
     if (form.bio && form.bio.length > 100) {
-      showToast('个人简介长度不能超过100个字符')
+      showToast({
+        message: '个人简介长度不能超过100个字符',
+        className: 'custom-toast'
+      })
       return
     }
     
@@ -320,7 +347,10 @@ const handleSave = async () => {
     emit('save', form)
   } catch (error) {
     console.error('保存资料验证失败:', error)
-    showToast('请完善资料信息')
+    showToast({
+      message: '请完善资料信息',
+      className: 'custom-toast'
+    })
   }
 }
 
@@ -380,4 +410,25 @@ initForm()
 .sport-level-row .van-field {
   flex: 1;
 }
+/* 自定义弹窗样式 */
+:deep(.custom-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-toast) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-dialog) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
+:deep(.van-popup) {
+  color: #333 !important;
+  background-color: white !important;
+}
+
 </style>

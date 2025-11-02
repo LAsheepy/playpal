@@ -116,21 +116,29 @@ const loadUserInfo = async (userId) => {
       }
     } else {
       // 如果是其他用户，从API获取数据
-      const { data: profile, error } = await profileApi.getUserProfile(userId)
-      if (error) throw error
+      // 首先检查userId是否为有效的UUID格式，如果不是则使用默认数据
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       
-      if (profile) {
-        userInfo.value = {
-          id: profile.id,
-          nickname: profile.nickname,
-          avatar: profile.avatar,
-          bio: profile.bio,
-          sports: [
-            { name: '匹克球', level: profile.pickleball_level || '未设置' },
-            { name: '网球', level: profile.tennis_level || '未设置' },
-            { name: '羽毛球', level: profile.badminton_level || '未设置' }
-          ]
+      if (uuidRegex.test(userId)) {
+        const { data: profile, error } = await profileApi.getUserProfile(userId)
+        if (error) throw error
+        
+        if (profile) {
+          userInfo.value = {
+            id: profile.id,
+            nickname: profile.nickname,
+            avatar: profile.avatar,
+            bio: profile.bio,
+            sports: [
+              { name: '匹克球', level: profile.pickleball_level || '未设置' },
+              { name: '网球', level: profile.tennis_level || '未设置' },
+              { name: '羽毛球', level: profile.badminton_level || '未设置' }
+            ]
+          }
         }
+      } else {
+        // 如果userId不是UUID格式，使用默认数据
+        throw new Error('用户ID格式无效')
       }
     }
   } catch (error) {
@@ -196,7 +204,7 @@ const goBack = () => {
 }
 
 onMounted(() => {
-  const userId = parseInt(route.params.id)
+  const userId = route.params.id
   loadUserInfo(userId)
   loadUserMatches(userId)
 })

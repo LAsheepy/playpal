@@ -192,13 +192,19 @@ const historyCount = computed(() => {
 // 头像上传
 const onAvatarUpload = (file) => {
   // 模拟上传成功
-  showToast('头像上传成功')
+  showToast({
+    message: '头像上传成功',
+    className: 'custom-toast'
+  })
   // 这里应该调用实际的图片上传接口
   console.log('上传文件:', file)
 }
 
 const onOversize = () => {
-  showToast('文件大小不能超过 1MB')
+  showToast({
+    message: '文件大小不能超过 1MB',
+    className: 'custom-toast'
+  })
 }
 
 // 导航功能
@@ -219,7 +225,10 @@ const goToSettings = () => {
 }
 
 const goToFavorites = () => {
-  showToast('收藏功能开发中')
+  showToast({
+    message: '收藏功能开发中',
+    className: 'custom-toast'
+  })
 }
 
 // 根据数值水平获取等级分类
@@ -238,17 +247,24 @@ const getLevelCategory = (level) => {
 const handleSaveProfile = (newInfo) => {
   userStore.updateUserInfo(newInfo)
   showEditPopup.value = false
-  showToast('资料更新成功')
+  showToast({
+    message: '资料更新成功',
+    className: 'custom-toast'
+  })
 }
 
 // 退出登录
 const handleLogout = () => {
   showConfirmDialog({
     title: '确认退出',
-    message: '确定要退出登录吗？'
+    message: '确定要退出登录吗？',
+    className: 'custom-dialog'
   }).then(() => {
     userStore.logout()
-    showToast('退出成功')
+    showToast({
+      message: '退出成功',
+      className: 'custom-toast'
+    })
     router.push('/login')
   })
 }
@@ -263,7 +279,7 @@ const handleLogout = () => {
 }
 
 .profile-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #75c7e8 0%, #b2e5cb 100%);
   color: white;
   padding: 40px 20px 30px;
   display: flex;
