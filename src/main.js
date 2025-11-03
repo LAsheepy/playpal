@@ -4,6 +4,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import 'vant/lib/index.css'
 
+// 确保Vue API全局可用
+import * as VueAPI from 'vue'
+window.Vue = VueAPI
+
 // 导入页面组件
 import Login from './pages/Login.vue'
 import Home from './pages/Home.vue'
