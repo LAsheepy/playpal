@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase.js'
 
 // 管理员专用API
 export const adminApi = {
@@ -220,6 +220,68 @@ export const adminApi = {
     } catch (error) {
       console.error('获取球局统计失败:', error)
       return { data: null, error: error.message }
+    }
+  },
+
+  // 删除球局
+  async deleteMatch(matchId) {
+    try {
+      const isAdmin = await this.isAdmin()
+      if (!isAdmin) {
+        throw new Error('无管理员权限')
+      }
+
+      // 先删除球局相关的参与者记录
+      const { error: participantsError } = await supabase
+        .from('match_participants')
+        .delete()
+        .eq('match_id', matchId)
+
+      if (participantsError) throw participantsError
+
+      // 再删除球局记录
+      const { error: matchError } = await supabase
+        .from('matches')
+        .delete()
+        .eq('id', matchId)
+
+      if (matchError) throw matchError
+
+      return { data: { success: true }, error: null }
+    } catch (error) {
+      console.error('删除球局失败:', error)
+      return { data: null, error: error.message }
+    }
+  },
+
+  // 检查数据库连接状态
+  async checkDatabaseConnection() {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('count', { count: 'exact', head: true })
+        .limit(1)
+
+      if (error) {
+        return { 
+          connected: false, 
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }
+      }
+
+      return { 
+        connected: true, 
+        timestamp: new Date().toISOString(),
+        tables: ['profiles', 'matches', 'match_participants']
+      }
+    } catch (error) {
+      console.error('数据库连接检查失败:', error)
+      return { 
+        connected: false, 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }
     }
   }
 }

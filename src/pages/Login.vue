@@ -255,7 +255,7 @@ const handleAdminLogin = async (email, password) => {
 .login-header {
   text-align: center;
   color: rgb(64, 127, 211);
-  margin-bottom: 60px;
+  margin-bottom: 30px;
 }
 
 .login-header h1 {

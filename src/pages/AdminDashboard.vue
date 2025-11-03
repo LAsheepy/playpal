@@ -509,6 +509,9 @@ const searchMatches = () => {
 
 // 刷新数据
 const refreshData = async () => {
+  const dbConnected = await checkDatabaseConnection()
+  if (!dbConnected) return
+  
   await loadStats()
   users.value = []
   matches.value = []
@@ -581,14 +584,66 @@ const goBack = () => {
   router.push('/home')
 }
 
+// 检查数据库连接状态
+const checkDatabaseConnection = async () => {
+  try {
+    const connectionStatus = await adminApi.checkDatabaseConnection()
+    if (!connectionStatus.connected) {
+      showToast({
+        message: `数据库连接失败: ${connectionStatus.error}`,
+        type: 'warning'
+      })
+      return false
+    }
+    console.log('数据库连接正常:', connectionStatus)
+    return true
+  } catch (error) {
+    console.error('数据库连接检查失败:', error)
+    showToast({
+      message: '数据库连接检查失败',
+      type: 'warning'
+    })
+    return false
+  }
+}
+
+// 实时数据更新（每30秒自动刷新）
+let autoRefreshInterval = null
+const startAutoRefresh = () => {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval)
+  
+  autoRefreshInterval = setInterval(async () => {
+    if (activeNav.value === 'overview') {
+      await loadStats()
+    }
+  }, 30000) // 30秒刷新一次
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval)
+    autoRefreshInterval = null
+  }
+}
+
 // 页面加载时初始化数据
 onMounted(async () => {
   const hasPermission = await checkAdminPermission()
   if (hasPermission) {
-    await loadStats()
-    await loadUsers()
-    await loadMatches()
+    const dbConnected = await checkDatabaseConnection()
+    if (dbConnected) {
+      await loadStats()
+      await loadUsers()
+      await loadMatches()
+      startAutoRefresh()
+    }
   }
+})
+
+// 页面卸载时清理资源
+onUnmounted(() => {
+  stopAutoRefresh()
 })
 </script>
 
@@ -901,7 +956,7 @@ onMounted(async () => {
 }
 
 .match-table .table-header {
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px 100px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px 120px;
 }
 
 .table-row {
@@ -920,7 +975,7 @@ onMounted(async () => {
 }
 
 .match-table .table-row {
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 100px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px 120px;
 }
 
 .col-nickname, .col-email, .col-level, .col-time,
