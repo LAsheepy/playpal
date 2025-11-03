@@ -657,11 +657,11 @@ onUnmounted(() => {
 /* 侧边栏样式 */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: linear-gradient(135deg, #a6c9ed 50%, #80d8ee 50%);
   color: white;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgba(142, 113, 113, 0.1);
 }
 
 .sidebar-header {
@@ -701,7 +701,7 @@ onUnmounted(() => {
 
 .nav-item.active {
   background: rgba(52, 152, 219, 0.2);
-  border-left-color: #3498db;
+  border-left-color: #7abce8;
 }
 
 .nav-icon {
@@ -752,7 +752,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #209ff3;
 }
 
 .nav-right {
@@ -820,7 +820,7 @@ onUnmounted(() => {
 
 .stat-label {
   font-size: 14px;
-  color: #7f8c8d;
+  color: #557c7e;
   font-weight: 500;
 }
 
@@ -996,7 +996,7 @@ onUnmounted(() => {
 }
 
 .delete-btn:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226) !important;
+  background: linear-gradient(135deg, #c0392b, #cd5045) !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
 }
