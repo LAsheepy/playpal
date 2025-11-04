@@ -212,7 +212,7 @@ export const battleApi = {
   // 创建对战
   async createBattle(battleData) {
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .insert([battleData])
       .select()
     return { data, error }
@@ -221,7 +221,7 @@ export const battleApi = {
   // 获取球局的所有对战记录
   async getMatchBattles(matchId) {
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .select(`
         *,
         team_a:team_a_participants!inner(participant:profiles!team_a_participants_participant_id_fkey(*)),
@@ -235,7 +235,7 @@ export const battleApi = {
   // 更新对战比分
   async updateBattleScore(battleId, scoreA, scoreB, winnerTeam) {
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .update({
         score_a: scoreA,
         score_b: scoreB,
@@ -249,8 +249,12 @@ export const battleApi = {
   // 获取用户的胜场统计
   async getUserWinStats(userId) {
     const { data, error } = await supabase
-      .from('matches')
-      .select('*')
+      .from('battles')
+      .select(`
+        *,
+        team_a_participants(participant_id),
+        team_b_participants(participant_id)
+      `)
       .or(`team_a_participants.participant_id.eq.${userId},team_b_participants.participant_id.eq.${userId}`)
     
     if (error) return { data: null, error }
