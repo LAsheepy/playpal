@@ -314,7 +314,7 @@ import {
   RadioGroup as VanRadioGroup
 } from 'vant'
 import { getSportColor, getLevelColor, getLevelTextColor } from '../utils/colors'
-import { battleApi } from '../utils/supabase'
+import { battleApi, matchApi } from '../utils/supabase'
 
 const route = useRoute()
 const router = useRouter()
