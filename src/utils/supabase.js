@@ -207,4 +207,66 @@ export const matchApi = {
   }
 }
 
+// 对战相关操作
+export const battleApi = {
+  // 创建对战
+  async createBattle(battleData) {
+    const { data, error } = await supabase
+      .from('battles')
+      .insert([battleData])
+      .select()
+    return { data, error }
+  },
+
+  // 获取球局的所有对战记录
+  async getMatchBattles(matchId) {
+    const { data, error } = await supabase
+      .from('battles')
+      .select(`
+        *,
+        team_a:team_a_participants!inner(participant:profiles!team_a_participants_participant_id_fkey(*)),
+        team_b:team_b_participants!inner(participant:profiles!team_b_participants_participant_id_fkey(*))
+      `)
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: false })
+    return { data, error }
+  },
+
+  // 更新对战比分
+  async updateBattleScore(battleId, scoreA, scoreB, winnerTeam) {
+    const { data, error } = await supabase
+      .from('battles')
+      .update({
+        score_a: scoreA,
+        score_b: scoreB,
+        winner_team: winnerTeam,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', battleId)
+    return { data, error }
+  },
+
+  // 获取用户的胜场统计
+  async getUserWinStats(userId) {
+    const { data, error } = await supabase
+      .from('battles')
+      .select('*')
+      .or(`team_a_participants.participant_id.eq.${userId},team_b_participants.participant_id.eq.${userId}`)
+    
+    if (error) return { data: null, error }
+    
+    const wins = data.filter(battle => {
+      if (battle.winner_team === 'A' && battle.team_a_participants.some(p => p.participant_id === userId)) {
+        return true
+      }
+      if (battle.winner_team === 'B' && battle.team_b_participants.some(p => p.participant_id === userId)) {
+        return true
+      }
+      return false
+    }).length
+    
+    return { data: { totalBattles: data.length, wins }, error: null }
+  }
+}
+
 export default supabase

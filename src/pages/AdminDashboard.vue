@@ -657,7 +657,7 @@ onUnmounted(() => {
 /* 侧边栏样式 */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #a6c9ed 50%, #80d8ee 50%);
+  background: linear-gradient(135deg, #5999da 50%, #90d6ff 50%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -800,12 +800,12 @@ onUnmounted(() => {
   font-size: 24px;
 }
 
-.user-icon { background: linear-gradient(135deg, #3498db, #2980b9); }
-.new-user-icon { background: linear-gradient(135deg, #2ecc71, #27ae60); }
-.active-icon { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-.match-icon { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-.new-match-icon { background: linear-gradient(135deg, #f39c12, #d35400); }
-.sport-icon { background: linear-gradient(135deg, #1abc9c, #16a085); }
+.user-icon { background: linear-gradient(135deg, #3498db, #52a1d5); }
+.new-user-icon { background: linear-gradient(135deg, #2ecc71, #3ec174); }
+.active-icon { background: linear-gradient(135deg, #d4746a, #d26a5f); }
+.match-icon { background: linear-gradient(135deg, #9b59b6, #aa62c9); }
+.new-match-icon { background: linear-gradient(135deg, #f39c12, #d28755); }
+.sport-icon { background: linear-gradient(135deg, #1abc9c, #38dcbb); }
 
 .stat-content {
   flex: 1;

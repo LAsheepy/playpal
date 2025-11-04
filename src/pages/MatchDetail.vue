@@ -57,11 +57,6 @@
             <div class="info-label">人数</div>
             <div class="info-value">
               {{ matchDetail.currentPlayers }}/{{ matchDetail.maxPlayers }}人
-              <van-progress 
-                :percentage="(matchDetail.currentPlayers / matchDetail.maxPlayers) * 100"
-                stroke-width="4"
-                color="#1989fa"
-              />
             </div>
           </div>
         </div>
@@ -78,21 +73,30 @@
         <div class="card-header">
           <h3>参与成员 ({{ matchDetail.participants.length }})</h3>
         </div>
-        <div class="participants-list">
+        <div class="participants-grid">
           <div 
             v-for="participant in matchDetail.participants" 
             :key="participant.id"
-            class="participant-item"
+            class="participant-card"
             @click="viewParticipantProfile(participant)"
           >
             <van-image
               round
-              width="40"
-              height="40"
+              width="48"
+              height="48"
               :src="participant.avatar || '/default-avatar.jpg'"
             />
-            <div class="participant-info">
-              <span class="participant-name">{{ participant.nickname }}</span>
+            <div class="participant-details">
+              <div class="participant-name-row">
+                <span class="participant-name">{{ participant.nickname }}</span>
+                <van-tag 
+                  v-if="participant.id === matchDetail.creator.id" 
+                  type="primary" 
+                  size="mini"
+                >
+                  发起人
+                </van-tag>
+              </div>
               <span class="participant-level" :style="{ 
                 backgroundColor: getLevelColor(participant.level),
                 color: getLevelTextColor(participant.level)
@@ -100,14 +104,89 @@
                 {{ participant.level }}
               </span>
             </div>
-            <van-tag 
-              v-if="participant.id === matchDetail.creator.id" 
-              type="primary" 
-              size="small"
-            >
-              发起人
-            </van-tag>
           </div>
+        </div>
+      </div>
+
+      <!-- 对战功能 -->
+      <div class="battle-card" v-if="isJoined && matchDetail.participants.length >= 2">
+        <div class="card-header">
+          <h3>对战记录</h3>
+          <van-button 
+            type="primary" 
+            size="small"
+            @click="openBattleDialog"
+          >
+            新建对战
+          </van-button>
+        </div>
+        
+        <!-- 对战记录列表 -->
+        <div class="battle-list" v-if="battles.length > 0">
+          <div 
+            v-for="battle in battles" 
+            :key="battle.id"
+            class="battle-item"
+          >
+            <div class="battle-header">
+              <div class="battle-mode">
+                <van-tag 
+                  :type="battle.team_a.length > 1 || battle.team_b.length > 1 ? 'primary' : 'default'"
+                  size="small"
+                >
+                  {{ battle.team_a.length > 1 || battle.team_b.length > 1 ? '双打' : '单打' }}
+                </van-tag>
+              </div>
+              <div class="battle-actions">
+                <van-button 
+                  type="default" 
+                  size="mini"
+                  @click="editBattle(battle)"
+                >
+                  编辑
+                </van-button>
+              </div>
+            </div>
+            
+            <div class="battle-content">
+              <div class="battle-teams">
+                <div class="team team-a">
+                  <div class="team-players">
+                    <span 
+                      v-for="player in battle.team_a" 
+                      :key="player.participant.id"
+                      class="player-name"
+                    >
+                      {{ player.participant.nickname }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="battle-score">
+                  <span class="score">{{ battle.score_a || 0 }} : {{ battle.score_b || 0 }}</span>
+                  <div class="winner-tag" v-if="battle.winner_team">
+                    {{ battle.winner_team === 'A' ? 'A队胜' : 'B队胜' }}
+                  </div>
+                </div>
+                
+                <div class="team team-b">
+                  <div class="team-players">
+                    <span 
+                      v-for="player in battle.team_b" 
+                      :key="player.participant.id"
+                      class="player-name"
+                    >
+                      {{ player.participant.nickname }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="no-battles" v-else>
+          <p>暂无对战记录，点击"新建对战"开始记录</p>
         </div>
       </div>
 
@@ -139,6 +218,72 @@
     <div class="loading" v-else>
       <van-loading type="spinner" size="24px">加载中...</van-loading>
     </div>
+
+    <!-- 对战弹窗 -->
+    <van-popup v-model:show="showBattleDialog" position="bottom" round :style="{ height: '75%' }">
+      <div class="battle-dialog">
+        <div class="dialog-header">
+          <h3>{{ editingBattle ? '编辑对战' : '新建对战' }}</h3>
+          <van-button type="primary" size="small" @click="saveBattle">保存</van-button>
+        </div>
+        
+        <div class="dialog-content">
+          <!-- 对战模式选择 -->
+          <div class="mode-selection">
+            <h4>对战模式</h4>
+            <van-radio-group v-model="battleForm.mode" direction="horizontal">
+              <van-radio name="singles">单打</van-radio>
+              <van-radio name="doubles">双打</van-radio>
+            </van-radio-group>
+          </div>
+          
+          <!-- 队伍选择 -->
+          <div class="team-selection">
+            <div class="team-section">
+              <h4>A队成员</h4>
+              <van-picker
+                :columns="participantOptions"
+                :model-value="battleForm.teamA"
+                @change="(values) => battleForm.teamA = values"
+                :multiple="battleForm.mode === 'doubles'"
+                :max-count="battleForm.mode === 'doubles' ? 2 : 1"
+              />
+            </div>
+            
+            <div class="team-section">
+              <h4>B队成员</h4>
+              <van-picker
+                :columns="participantOptions"
+                :model-value="battleForm.teamB"
+                @change="(values) => battleForm.teamB = values"
+                :multiple="battleForm.mode === 'doubles'"
+                :max-count="battleForm.mode === 'doubles' ? 2 : 1"
+              />
+            </div>
+          </div>
+          
+          <!-- 比分输入 -->
+          <div class="score-input">
+            <h4>比分</h4>
+            <div class="score-fields">
+              <van-field
+                v-model="battleForm.scoreA"
+                placeholder="A队得分"
+                type="number"
+                label="A队"
+              />
+              <span class="score-separator">:</span>
+              <van-field
+                v-model="battleForm.scoreB"
+                placeholder="B队得分"
+                type="number"
+                label="B队"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -157,9 +302,15 @@ import {
   Cell as VanCell,
   CellGroup as VanCellGroup,
   Progress as VanProgress,
-  Tag as VanTag
+  Tag as VanTag,
+  Popup as VanPopup,
+  Field as VanField,
+  Picker as VanPicker,
+  Radio as VanRadio,
+  RadioGroup as VanRadioGroup
 } from 'vant'
 import { getSportColor, getLevelColor, getLevelTextColor } from '../utils/colors'
+import { battleApi } from '../utils/supabase'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,6 +318,16 @@ const matchStore = useMatchStore()
 const userStore = useUserStore()
 
 const matchDetail = ref(null)
+const battles = ref([])
+const showBattleDialog = ref(false)
+const editingBattle = ref(null)
+const battleForm = ref({
+  mode: 'singles',
+  teamA: [],
+  teamB: [],
+  scoreA: '',
+  scoreB: ''
+})
 
 // 计算属性
 const isJoined = computed(() => {
@@ -179,6 +340,14 @@ const isJoined = computed(() => {
 const isFull = computed(() => {
   if (!matchDetail.value) return false
   return matchDetail.value.currentPlayers >= matchDetail.value.maxPlayers
+})
+
+const participantOptions = computed(() => {
+  if (!matchDetail.value) return []
+  return matchDetail.value.participants.map(p => ({
+    text: p.nickname,
+    value: p.id
+  }))
 })
 
 // 运动类型样式
@@ -275,6 +444,120 @@ const viewParticipantProfile = (participant) => {
       message: '该用户资料暂不可用',
       className: 'custom-toast'
     })
+  }
+}
+
+// 对战相关方法
+const openBattleDialog = () => {
+  battleForm.value = {
+    mode: 'singles',
+    teamA: [],
+    teamB: [],
+    scoreA: '',
+    scoreB: ''
+  }
+  editingBattle.value = null
+  showBattleDialog.value = true
+}
+
+const editBattle = (battle) => {
+  // 根据队伍人数判断对战模式
+  const isDoubles = battle.team_a.length > 1 || battle.team_b.length > 1
+  
+  battleForm.value = {
+    mode: isDoubles ? 'doubles' : 'singles',
+    teamA: battle.team_a.map(p => p.participant.id),
+    teamB: battle.team_b.map(p => p.participant.id),
+    scoreA: battle.score_a || '',
+    scoreB: battle.score_b || ''
+  }
+  editingBattle.value = battle
+  showBattleDialog.value = true
+}
+
+const saveBattle = async () => {
+  // 验证表单
+  if (battleForm.value.teamA.length === 0 || battleForm.value.teamB.length === 0) {
+    showToast({
+      message: '请选择对战成员',
+      className: 'custom-toast'
+    })
+    return
+  }
+  
+  if (!battleForm.value.scoreA || !battleForm.value.scoreB) {
+    showToast({
+      message: '请输入比分',
+      className: 'custom-toast'
+    })
+    return
+  }
+  
+  // 确定获胜队伍
+  const scoreA = parseInt(battleForm.value.scoreA)
+  const scoreB = parseInt(battleForm.value.scoreB)
+  const winnerTeam = scoreA > scoreB ? 'A' : 'B'
+  
+  try {
+    if (editingBattle.value) {
+      // 更新对战
+      const { error } = await battleApi.updateBattleScore(
+        editingBattle.value.id,
+        scoreA,
+        scoreB,
+        winnerTeam
+      )
+      
+      if (error) throw error
+      
+      showToast({
+        message: '对战记录更新成功',
+        className: 'custom-toast'
+      })
+    } else {
+      // 创建对战
+      const battleData = {
+        match_id: matchDetail.value.id,
+        score_a: scoreA,
+        score_b: scoreB,
+        winner_team: winnerTeam,
+        team_a_participants: battleForm.value.teamA.map(id => ({ participant_id: id })),
+        team_b_participants: battleForm.value.teamB.map(id => ({ participant_id: id }))
+      }
+      
+      const { data, error } = await battleApi.createBattle(battleData)
+      
+      if (error) throw error
+      
+      showToast({
+        message: '对战记录创建成功',
+        className: 'custom-toast'
+      })
+    }
+    
+    // 刷新对战记录
+    await loadBattles()
+    showBattleDialog.value = false
+  } catch (error) {
+    console.error('保存对战记录失败:', error)
+    showToast({
+      message: '保存失败，请重试',
+      className: 'custom-toast'
+    })
+  }
+}
+
+const loadBattles = async () => {
+  if (!matchDetail.value) return
+  
+  try {
+    const { data, error } = await battleApi.getMatchBattles(matchDetail.value.id)
+    
+    if (error) throw error
+    
+    battles.value = data || []
+  } catch (error) {
+    console.error('加载对战记录失败:', error)
   }
 }
 
@@ -445,37 +728,58 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-.participants-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
 }
 
-.participant-item {
+.participant-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: background-color 0.2s;
+}
+
+.participant-card:active {
+  background-color: #e9ecef;
+}
+
+.participant-details {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.participant-name-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.participant-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 .participant-name {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
 }
 
 .participant-level {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  min-width: 40px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 32px;
   text-align: center;
   font-weight: bold;
+  display: inline-block;
 }
 
 .action-buttons {
@@ -489,6 +793,356 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
 }
+/* 对战功能样式 */
+.battle-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.battle-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.battle-card .card-header h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.battle-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.battle-mode {
+  flex: 1;
+}
+
+.battle-content {
+  margin-top: 8px;
+}
+
+.battle-teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.team {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.team-players {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.player-name {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.battle-score {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.score {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.winner-tag {
+  font-size: 11px;
+  color: #07c160;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.battle-actions {
+  flex-shrink: 0;
+}
+
+.no-battles {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+/* 对战弹窗样式 */
+.battle-dialog {
+  padding: 16px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dialog-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.mode-selection {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mode-selection h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.team-selection {
+  margin-bottom: 16px;
+}
+
+.team-section {
+  margin-bottom: 12px;
+}
+
+.team-section h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.score-input {
+  margin-bottom: 16px;
+}
+
+.score-input h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.score-fields {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-separator {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 对战功能样式 */
+.battle-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.battle-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.battle-card .card-header h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.battle-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.battle-mode {
+  flex: 1;
+}
+
+.battle-content {
+  margin-top: 8px;
+}
+
+.battle-teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.team {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.team-players {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.player-name {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.battle-score {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.score {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.winner-tag {
+  font-size: 11px;
+  color: #07c160;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.battle-actions {
+  flex-shrink: 0;
+}
+
+.no-battles {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+/* 对战弹窗样式 */
+.battle-dialog {
+  padding: 16px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dialog-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.mode-selection {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mode-selection h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.team-selection {
+  margin-bottom: 16px;
+}
+
+.team-section {
+  margin-bottom: 12px;
+}
+
+.team-section h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.score-input {
+  margin-bottom: 16px;
+}
+
+.score-input h4 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.score-fields {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-separator {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
 /* 自定义弹窗样式 */
 :deep(.custom-toast) {
   color: #333 !important;
