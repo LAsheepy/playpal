@@ -569,19 +569,44 @@ const saveBattle = async () => {
         className: 'custom-toast'
       })
     } else {
-      // 创建对战
+      // 创建对战 - 使用matches表存储对战记录，通过type字段区分
       const battleData = {
-        match_id: matchDetail.value.id,
+        parent_match_id: matchDetail.value.id, // 关联到主球局
+        type: 'battle', // 标记为对战记录
+        title: `${matchDetail.value.title} - 对战记录`,
+        sport: matchDetail.value.sport,
         score_a: scoreA,
         score_b: scoreB,
         winner_team: winnerTeam,
-        team_a_participants: battleForm.value.teamA.map(id => ({ participant_id: id })),
-        team_b_participants: battleForm.value.teamB.map(id => ({ participant_id: id }))
+        creator_id: userStore.userInfo.id,
+        time: new Date().toISOString(),
+        location: matchDetail.value.location,
+        max_players: battleForm.value.teamA.length + battleForm.value.teamB.length,
+        current_players: battleForm.value.teamA.length + battleForm.value.teamB.length
       }
       
       const { data, error } = await battleApi.createBattle(battleData)
       
       if (error) throw error
+      
+      // 创建对战参与者记录
+      if (data && data[0]) {
+        const battleId = data[0].id
+        
+        // 创建A队参与者记录
+        for (const participantId of battleForm.value.teamA) {
+          await supabase
+            .from('match_participants')
+            .insert([{ match_id: battleId, participant_id: participantId, team: 'A' }])
+        }
+        
+        // 创建B队参与者记录
+        for (const participantId of battleForm.value.teamB) {
+          await supabase
+            .from('match_participants')
+            .insert([{ match_id: battleId, participant_id: participantId, team: 'B' }])
+        }
+      }
       
       showToast({
         message: '对战记录创建成功',

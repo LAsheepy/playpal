@@ -212,7 +212,7 @@ export const battleApi = {
   // 创建对战
   async createBattle(battleData) {
     const { data, error } = await supabase
-      .from('battles')
+      .from('matches')
       .insert([battleData])
       .select()
     return { data, error }
@@ -221,21 +221,39 @@ export const battleApi = {
   // 获取球局的所有对战记录
   async getMatchBattles(matchId) {
     const { data, error } = await supabase
-      .from('battles')
+      .from('matches')
       .select(`
         *,
-        team_a:team_a_participants!inner(participant:profiles!team_a_participants_participant_id_fkey(*)),
-        team_b:team_b_participants!inner(participant:profiles!team_b_participants_participant_id_fkey(*))
+        participants:match_participants(
+          participant:profiles!match_participants_participant_id_fkey(*),
+          team
+        )
       `)
-      .eq('match_id', matchId)
+      .eq('parent_match_id', matchId)
+      .eq('type', 'battle')
       .order('created_at', { ascending: false })
-    return { data, error }
+    
+    if (error) return { data: null, error }
+    
+    // 处理数据，将参与者按队伍分组
+    const processedData = data.map(battle => {
+      const teamA = battle.participants?.filter(p => p.team === 'A') || []
+      const teamB = battle.participants?.filter(p => p.team === 'B') || []
+      
+      return {
+        ...battle,
+        team_a: teamA.map(p => ({ participant: p.participant })),
+        team_b: teamB.map(p => ({ participant: p.participant }))
+      }
+    })
+    
+    return { data: processedData, error: null }
   },
 
   // 更新对战比分
   async updateBattleScore(battleId, scoreA, scoreB, winnerTeam) {
     const { data, error } = await supabase
-      .from('battles')
+      .from('matches')
       .update({
         score_a: scoreA,
         score_b: scoreB,
@@ -249,7 +267,7 @@ export const battleApi = {
   // 获取用户的胜场统计
   async getUserWinStats(userId) {
     const { data, error } = await supabase
-      .from('battles')
+      .from('matches')
       .select(`
         *,
         team_a_participants(participant_id),
