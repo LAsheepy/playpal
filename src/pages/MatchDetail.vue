@@ -241,24 +241,32 @@
           <div class="team-selection">
             <div class="team-section">
               <h4>A队成员</h4>
-              <van-picker
-                :columns="participantOptions"
-                :model-value="battleForm.teamA"
-                @change="(values) => battleForm.teamA = values"
-                :multiple="battleForm.mode === 'doubles'"
-                :max-count="battleForm.mode === 'doubles' ? 2 : 1"
-              />
+              <div class="team-members">
+                <div 
+                  v-for="participant in matchDetail.participants" 
+                  :key="participant.id"
+                  class="member-item"
+                  :class="{ selected: battleForm.teamA.includes(participant.id) }"
+                  @click="toggleTeamMember('teamA', participant.id)"
+                >
+                  {{ participant.nickname }}
+                </div>
+              </div>
             </div>
             
             <div class="team-section">
               <h4>B队成员</h4>
-              <van-picker
-                :columns="participantOptions"
-                :model-value="battleForm.teamB"
-                @change="(values) => battleForm.teamB = values"
-                :multiple="battleForm.mode === 'doubles'"
-                :max-count="battleForm.mode === 'doubles' ? 2 : 1"
-              />
+              <div class="team-members">
+                <div 
+                  v-for="participant in matchDetail.participants" 
+                  :key="participant.id"
+                  class="member-item"
+                  :class="{ selected: battleForm.teamB.includes(participant.id) }"
+                  @click="toggleTeamMember('teamB', participant.id)"
+                >
+                  {{ participant.nickname }}
+                </div>
+              </div>
             </div>
           </div>
           
@@ -348,6 +356,36 @@ const participantOptions = computed(() => {
     text: p.nickname,
     value: p.id
   }))
+})
+
+// Picker值处理
+const teamAValue = computed({
+  get: () => battleForm.value.teamA,
+  set: (value) => {
+    battleForm.value.teamA = Array.isArray(value) ? value : [value]
+  }
+})
+
+const teamBValue = computed({
+  get: () => battleForm.value.teamB,
+  set: (value) => {
+    battleForm.value.teamB = Array.isArray(value) ? value : [value]
+  }
+})
+
+// Picker值处理
+const teamAValue = computed({
+  get: () => battleForm.value.teamA,
+  set: (value) => {
+    battleForm.value.teamA = Array.isArray(value) ? value : [value]
+  }
+})
+
+const teamBValue = computed({
+  get: () => battleForm.value.teamB,
+  set: (value) => {
+    battleForm.value.teamB = Array.isArray(value) ? value : [value]
+  }
 })
 
 // 运动类型样式
@@ -444,6 +482,68 @@ const viewParticipantProfile = (participant) => {
       message: '该用户资料暂不可用',
       className: 'custom-toast'
     })
+  }
+}
+
+// 切换队伍成员
+const toggleTeamMember = (team, participantId) => {
+  const currentTeam = battleForm.value[team]
+  const maxCount = battleForm.value.mode === 'doubles' ? 2 : 1
+  
+  if (currentTeam.includes(participantId)) {
+    // 如果已选中，则移除
+    battleForm.value[team] = currentTeam.filter(id => id !== participantId)
+  } else {
+    // 如果未选中，检查是否达到最大人数
+    if (currentTeam.length >= maxCount) {
+      showToast({
+        message: `${team === 'teamA' ? 'A队' : 'B队'}最多只能选择${maxCount}人`,
+        className: 'custom-toast'
+      })
+      return
+    }
+    // 检查是否已经在另一队
+    const otherTeam = team === 'teamA' ? battleForm.value.teamB : battleForm.value.teamA
+    if (otherTeam.includes(participantId)) {
+      showToast({
+        message: '该成员已在另一队中',
+        className: 'custom-toast'
+      })
+      return
+    }
+    
+    battleForm.value[team] = [...currentTeam, participantId]
+  }
+}
+
+// 切换队伍成员
+const toggleTeamMember = (team, participantId) => {
+  const currentTeam = battleForm.value[team]
+  const maxCount = battleForm.value.mode === 'doubles' ? 2 : 1
+  
+  if (currentTeam.includes(participantId)) {
+    // 如果已选中，则移除
+    battleForm.value[team] = currentTeam.filter(id => id !== participantId)
+  } else {
+    // 如果未选中，检查是否达到最大人数
+    if (currentTeam.length >= maxCount) {
+      showToast({
+        message: `${team === 'teamA' ? 'A队' : 'B队'}最多只能选择${maxCount}人`,
+        className: 'custom-toast'
+      })
+      return
+    }
+    // 检查是否已经在另一队
+    const otherTeam = team === 'teamA' ? battleForm.value.teamB : battleForm.value.teamA
+    if (otherTeam.includes(participantId)) {
+      showToast({
+        message: '该成员已在另一队中',
+        className: 'custom-toast'
+      })
+      return
+    }
+    
+    battleForm.value[team] = [...currentTeam, participantId]
   }
 }
 
@@ -1141,6 +1241,39 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: bold;
   color: #333;
+}
+
+/* 队伍成员选择样式 */
+.team-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.member-item {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.member-item:hover {
+  border-color: #1989fa;
+}
+
+.member-item.selected {
+  background: #1989fa;
+  color: white;
+  border-color: #1989fa;
+}
+
+.member-item:active {
+  transform: scale(0.95);
 }
 
 /* 自定义弹窗样式 */
