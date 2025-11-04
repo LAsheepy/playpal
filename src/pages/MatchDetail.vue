@@ -569,10 +569,9 @@ const saveBattle = async () => {
         className: 'custom-toast'
       })
     } else {
-      // 创建对战 - 使用matches表存储对战记录，通过type字段区分
+      // 创建对战 - 使用description字段存储对战数据
       const battleData = {
         parent_match_id: matchDetail.value.id, // 关联到主球局
-        type: 'battle', // 标记为对战记录
         title: `${matchDetail.value.title} - 对战记录`,
         sport: matchDetail.value.sport,
         score_a: scoreA,
@@ -582,7 +581,9 @@ const saveBattle = async () => {
         time: new Date().toISOString(),
         location: matchDetail.value.location,
         max_players: battleForm.value.teamA.length + battleForm.value.teamB.length,
-        current_players: battleForm.value.teamA.length + battleForm.value.teamB.length
+        current_players: battleForm.value.teamA.length + battleForm.value.teamB.length,
+        team_a_participants: battleForm.value.teamA,
+        team_b_participants: battleForm.value.teamB
       }
       
       const { data, error } = await battleApi.createBattle(battleData)
