@@ -214,70 +214,82 @@ export const matchApi = {
 
 // 对战相关操作
 export const battleApi = {
-  // 创建对战 - 使用description字段存储对战数据
+  // 创建对战 - 使用专门的battles表
   async createBattle(battleData) {
-    // 将对战数据序列化存储到description字段
-    const battleInfo = {
-      type: 'battle',
-      parent_match_id: battleData.parent_match_id,
-      score_a: battleData.score_a,
-      score_b: battleData.score_b,
-      winner_team: battleData.winner_team,
-      team_a_participants: battleData.team_a_participants || [],
-      team_b_participants: battleData.team_b_participants || []
-    }
-    
-    const matchData = {
+    // 创建对战记录
+    const battleRecord = {
+      match_id: battleData.parent_match_id,
       title: battleData.title || '对战记录',
       sport: battleData.sport,
       time: battleData.time || new Date().toISOString(),
       location: battleData.location || '对战场地',
-      max_players: battleData.max_players || 4,
-      creator_id: battleData.creator_id,
-      description: JSON.stringify(battleInfo) // 将对战数据存储到description字段
+      score_a: battleData.score_a || 0,
+      score_b: battleData.score_b || 0,
+      winner_team: battleData.winner_team,
+      creator_id: battleData.creator_id
     }
     
     const { data, error } = await supabase
-      .from('matches')
-      .insert([matchData])
+      .from('battles')
+      .insert([battleRecord])
       .select()
+    
+    if (error) return { data: null, error }
+    
+    // 创建对战参与者记录
+    if (data && data[0]) {
+      const battleId = data[0].id
+      
+      // 创建A队参与者记录
+      for (const participantId of battleData.team_a_participants || []) {
+        await supabase
+          .from('battle_participants')
+          .insert([{
+            battle_id: battleId,
+            participant_id: participantId,
+            team: 'A'
+          }])
+      }
+      
+      // 创建B队参与者记录
+      for (const participantId of battleData.team_b_participants || []) {
+        await supabase
+          .from('battle_participants')
+          .insert([{
+            battle_id: battleId,
+            participant_id: participantId,
+            team: 'B'
+          }])
+      }
+    }
+    
     return { data, error }
   },
 
   // 获取球局的所有对战记录
   async getMatchBattles(matchId) {
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .select(`
         *,
-        participants:match_participants(
-          participant:profiles!match_participants_participant_id_fkey(*),
+        creator:profiles!battles_creator_id_fkey(nickname, avatar),
+        participants:battle_participants(
+          participant:profiles!battle_participants_participant_id_fkey(nickname, avatar),
           team
         )
       `)
+      .eq('match_id', matchId)
       .order('created_at', { ascending: false })
     
     if (error) return { data: null, error }
     
-    // 过滤出对战记录（通过解析description字段判断）
-    const battleRecords = data.filter(match => {
-      try {
-        const desc = JSON.parse(match.description || '{}')
-        return desc.type === 'battle' && desc.parent_match_id === matchId
-      } catch {
-        return false
-      }
-    })
-    
     // 处理数据，将参与者按队伍分组
-    const processedData = battleRecords.map(battle => {
-      const battleInfo = JSON.parse(battle.description || '{}')
+    const processedData = data.map(battle => {
       const teamA = battle.participants?.filter(p => p.team === 'A') || []
       const teamB = battle.participants?.filter(p => p.team === 'B') || []
       
       return {
         ...battle,
-        ...battleInfo, // 展开对战信息
         team_a: teamA.map(p => ({ participant: p.participant })),
         team_b: teamB.map(p => ({ participant: p.participant }))
       }
@@ -288,25 +300,12 @@ export const battleApi = {
 
   // 更新对战比分
   async updateBattleScore(battleId, scoreA, scoreB, winnerTeam) {
-    // 先获取现有的对战数据
-    const { data: existingData, error: fetchError } = await supabase
-      .from('matches')
-      .select('description')
-      .eq('id', battleId)
-      .single()
-    
-    if (fetchError) return { data: null, error: fetchError }
-    
-    // 解析并更新对战数据
-    const battleInfo = JSON.parse(existingData.description || '{}')
-    battleInfo.score_a = scoreA
-    battleInfo.score_b = scoreB
-    battleInfo.winner_team = winnerTeam
-    
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .update({
-        description: JSON.stringify(battleInfo),
+        score_a: scoreA,
+        score_b: scoreB,
+        winner_team: winnerTeam,
         updated_at: new Date().toISOString()
       })
       .eq('id', battleId)
@@ -316,10 +315,10 @@ export const battleApi = {
   // 获取用户的胜场统计
   async getUserWinStats(userId) {
     const { data, error } = await supabase
-      .from('matches')
+      .from('battles')
       .select(`
         *,
-        participants:match_participants(
+        participants:battle_participants(
           participant_id,
           team
         )
@@ -327,24 +326,13 @@ export const battleApi = {
     
     if (error) return { data: null, error }
     
-    // 过滤出对战记录
-    const battleRecords = data.filter(match => {
-      try {
-        const desc = JSON.parse(match.description || '{}')
-        return desc.type === 'battle'
-      } catch {
-        return false
-      }
-    })
-    
-    const userBattles = battleRecords.filter(battle => {
+    const userBattles = data.filter(battle => {
       return battle.participants?.some(p => p.participant_id === userId)
     })
     
     const wins = userBattles.filter(battle => {
-      const battleInfo = JSON.parse(battle.description || '{}')
       const userTeam = battle.participants?.find(p => p.participant_id === userId)?.team
-      return battleInfo.winner_team === userTeam
+      return battle.winner_team === userTeam
     }).length
     
     return { data: { totalBattles: userBattles.length, wins }, error: null }

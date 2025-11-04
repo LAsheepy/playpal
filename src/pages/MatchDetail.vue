@@ -109,10 +109,11 @@
       </div>
 
       <!-- 对战功能 -->
-      <div class="battle-card" v-if="isJoined && matchDetail.participants.length >= 2">
+      <div class="battle-card" v-if="matchDetail.participants.length >= 2">
         <div class="card-header">
           <h3>对战记录</h3>
           <van-button 
+            v-if="isJoined"
             type="primary" 
             size="small"
             @click="openBattleDialog"
@@ -139,6 +140,7 @@
               </div>
               <div class="battle-actions">
                 <van-button 
+                  v-if="battle.creator_id === userStore.userInfo.id"
                   type="default" 
                   size="mini"
                   @click="editBattle(battle)"
@@ -154,10 +156,10 @@
                   <div class="team-players">
                     <span 
                       v-for="player in battle.team_a" 
-                      :key="player.participant.id"
+                      :key="player.participant?.id || player.participant_id"
                       class="player-name"
                     >
-                      {{ player.participant.nickname }}
+                      {{ player.participant?.nickname || '未知用户' }}
                     </span>
                   </div>
                 </div>
@@ -173,10 +175,10 @@
                   <div class="team-players">
                     <span 
                       v-for="player in battle.team_b" 
-                      :key="player.participant.id"
+                      :key="player.participant?.id || player.participant_id"
                       class="player-name"
                     >
-                      {{ player.participant.nickname }}
+                      {{ player.participant?.nickname || '未知用户' }}
                     </span>
                   </div>
                 </div>
@@ -485,8 +487,8 @@ const editBattle = (battle) => {
   
   battleForm.value = {
     mode: isDoubles ? 'doubles' : 'singles',
-    teamA: battle.team_a.map(p => p.participant.id),
-    teamB: battle.team_b.map(p => p.participant.id),
+    teamA: battle.team_a.map(p => p.participant?.id || p.participant_id),
+    teamB: battle.team_b.map(p => p.participant?.id || p.participant_id),
     scoreA: battle.score_a || '',
     scoreB: battle.score_b || ''
   }
