@@ -189,10 +189,15 @@ export const matchApi = {
   },
 
   // 加入球局
-  async joinMatch(matchId, userId) {
+  async joinMatch(matchId, userId, team = null) {
+    const participantData = { match_id: matchId, participant_id: userId }
+    if (team) {
+      participantData.team = team
+    }
+    
     const { data, error } = await supabase
       .from('match_participants')
-      .insert([{ match_id: matchId, participant_id: userId }])
+      .insert([participantData])
     return { data, error }
   },
 
@@ -228,7 +233,6 @@ export const battleApi = {
       time: battleData.time || new Date().toISOString(),
       location: battleData.location || '对战场地',
       max_players: battleData.max_players || 4,
-      current_players: battleData.current_players || 4,
       creator_id: battleData.creator_id,
       description: JSON.stringify(battleInfo) // 将对战数据存储到description字段
     }

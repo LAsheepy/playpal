@@ -307,13 +307,9 @@ import {
   Image as VanImage,
   Icon as VanIcon,
   Button as VanButton,
-  Cell as VanCell,
-  CellGroup as VanCellGroup,
-  Progress as VanProgress,
   Tag as VanTag,
   Popup as VanPopup,
   Field as VanField,
-  Picker as VanPicker,
   Radio as VanRadio,
   RadioGroup as VanRadioGroup
 } from 'vant'
@@ -350,38 +346,7 @@ const isFull = computed(() => {
   return matchDetail.value.currentPlayers >= matchDetail.value.maxPlayers
 })
 
-const participantOptions = computed(() => {
-  if (!matchDetail.value) return []
-  return matchDetail.value.participants.map(p => ({
-    text: p.nickname,
-    value: p.id
-  }))
-})
 
-// Picker值处理
-const teamAValue = computed({
-  get: () => battleForm.value.teamA,
-  set: (value) => {
-    battleForm.value.teamA = Array.isArray(value) ? value : [value]
-  }
-})
-
-const teamBValue = computed({
-  get: () => battleForm.value.teamB,
-  set: (value) => {
-    battleForm.value.teamB = Array.isArray(value) ? value : [value]
-  }
-})
-
-// 运动类型样式
-const getSportClass = (sport) => {
-  const sportClasses = {
-    '匹克球': 'pickleball',
-    '网球': 'tennis',
-    '羽毛球': 'badminton'
-  }
-  return sportClasses[sport] || ''
-}
 
 // 格式化时间
 const formatTime = (timeStr) => {
@@ -581,7 +546,6 @@ const saveBattle = async () => {
         time: new Date().toISOString(),
         location: matchDetail.value.location,
         max_players: battleForm.value.teamA.length + battleForm.value.teamB.length,
-        current_players: battleForm.value.teamA.length + battleForm.value.teamB.length,
         team_a_participants: battleForm.value.teamA,
         team_b_participants: battleForm.value.teamB
       }
@@ -596,16 +560,12 @@ const saveBattle = async () => {
         
         // 创建A队参与者记录
         for (const participantId of battleForm.value.teamA) {
-          await supabase
-            .from('match_participants')
-            .insert([{ match_id: battleId, participant_id: participantId, team: 'A' }])
+          await matchApi.joinMatch(battleId, participantId, 'A')
         }
         
         // 创建B队参与者记录
         for (const participantId of battleForm.value.teamB) {
-          await supabase
-            .from('match_participants')
-            .insert([{ match_id: battleId, participant_id: participantId, team: 'B' }])
+          await matchApi.joinMatch(battleId, participantId, 'B')
         }
       }
       
@@ -656,6 +616,9 @@ onMounted(async () => {
     if (result.success) {
       matchDetail.value = result.data
       console.log('球局详情加载成功:', matchDetail.value)
+      
+      // 加载对战记录
+      await loadBattles()
     } else {
       console.error('获取球局详情失败:', result.error)
       showToast({

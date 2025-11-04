@@ -150,15 +150,7 @@ const filteredMatches = computed(() => {
   return matches
 })
 
-// 运动类型样式
-const getSportClass = (sport) => {
-  const sportClasses = {
-    '匹克球': 'pickleball',
-    '网球': 'tennis',
-    '羽毛球': 'badminton'
-  }
-  return sportClasses[sport] || ''
-}
+
 
 // 格式化时间
 const formatTime = (timeStr) => {
