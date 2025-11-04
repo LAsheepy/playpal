@@ -770,7 +770,8 @@ onMounted(() => {
   min-width: 20px;
   text-align: center;
   margin-right: 8px;
-  color: white;
+  color: white !important;
+  font-weight: bold;
 }
 
 .time-unit {

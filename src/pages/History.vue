@@ -8,146 +8,160 @@
       @click-left="goBack"
     />
     
+    <!-- 统计信息 -->
+    <div v-if="historyStore.stats.total > 0" class="stats-section">
+      <div class="stats-card">
+        <div class="stat-item">
+          <div class="stat-value">{{ historyStore.stats.total }}</div>
+          <div class="stat-label">总场次</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ historyStore.stats.wins }}</div>
+          <div class="stat-label">胜利</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ historyStore.stats.winRate }}%</div>
+          <div class="stat-label">胜率</div>
+        </div>
+      </div>
+    </div>
+    
     <!-- 历史记录列表 -->
     <div class="history-list">
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-        <van-list
-          v-model:loading="loading"
-          :finished="finished"
-          finished-text="没有更多了"
-          @load="onLoad"
-        >
-          <div
-            v-for="record in historyRecords"
-            :key="record.id"
-            class="history-card"
-          >
-            <div class="record-header">
-              <span class="sport-tag" :style="{ backgroundColor: getSportColor(record.sport) }">
-                {{ record.sport }}
-              </span>
-              <span class="date">{{ formatDate(record.date) }}</span>
-            </div>
+        <!-- 加载状态 -->
+        <div v-if="historyStore.isLoading" class="loading-container">
+          <van-loading size="24px" vertical>加载中...</van-loading>
+        </div>
+        
+        <!-- 空状态 -->
+        <div v-else-if="historyStore.historyRecords.length === 0" class="empty-state">
+          <van-empty image="search" description="暂无历史记录">
+            <van-button round type="primary" @click="onRefresh">
+              刷新数据
+            </van-button>
+          </van-empty>
+        </div>
+        
+        <!-- 历史记录内容 -->
+        <div v-else>
+          <!-- 按日期分组显示 -->
+          <div v-for="(records, date) in historyStore.groupedHistoryRecords" :key="date" class="date-group">
+            <div class="date-header">{{ date }}</div>
             
-            <div class="record-content">
-              <div class="record-title">{{ record.title }}</div>
+            <div
+              v-for="record in records"
+              :key="record.id"
+              class="history-card"
+            >
+              <div class="record-header">
+                <span class="sport-tag" :style="{ backgroundColor: getSportColor(record.sport) }">
+                  {{ record.sport }}
+                </span>
+                <span class="time">{{ formatTime(record.date) }}</span>
+              </div>
               
-              <div class="record-info">
-                <div class="info-item">
-                  <van-icon name="location-o" />
-                  <span>{{ record.location }}</span>
+              <div class="record-content">
+                <div class="record-title">{{ record.title }}</div>
+                
+                <div class="record-info">
+                  <div class="info-item">
+                    <van-icon name="location-o" />
+                    <span>{{ record.location }}</span>
+                  </div>
+                  <div class="info-item">
+                    <van-icon name="friends-o" />
+                    <span>{{ record.participants.length }}人参与</span>
+                  </div>
                 </div>
-                <div class="info-item">
-                  <van-icon name="friends-o" />
-                  <span>{{ record.participants.length }}人参与</span>
+                
+                <!-- 队伍信息 -->
+                <div class="teams-section">
+                  <div class="team-info">
+                    <div class="team-label">A队</div>
+                    <div class="team-members">
+                      <span 
+                        v-for="participant in record.teamA" 
+                        :key="participant.id"
+                        class="participant-name"
+                      >
+                        {{ participant.name }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="vs-divider">VS</div>
+                  
+                  <div class="team-info">
+                    <div class="team-label">B队</div>
+                    <div class="team-members">
+                      <span 
+                        v-for="participant in record.teamB" 
+                        :key="participant.id"
+                        class="participant-name"
+                      >
+                        {{ participant.name }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div class="participants">
-                <span class="label">参与人员：</span>
-                <div class="participant-list">
-                  <span 
-                    v-for="participant in record.participants" 
-                    :key="participant.id"
-                    class="participant-name"
-                  >
-                    {{ participant.name }}
-                  </span>
-                </div>
+              <div class="record-footer">
+                <van-tag :type="record.result === 'win' ? 'success' : 'danger'">
+                  {{ record.result === 'win' ? '胜利' : '失败' }}
+                </van-tag>
+                <span class="score">{{ record.score }}</span>
               </div>
-            </div>
-            
-            <div class="record-footer">
-              <van-tag :type="record.result === 'win' ? 'success' : 'danger'">
-                {{ record.result === 'win' ? '胜利' : '失败' }}
-              </van-tag>
-              <span class="score">{{ record.score }}</span>
             </div>
           </div>
-        </van-list>
+        </div>
       </van-pull-refresh>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHistoryStore } from '../stores/history'
 import { getSportColor } from '../utils/colors'
 import {
   NavBar as VanNavBar,
   PullRefresh as VanPullRefresh,
-  List as VanList,
+  Loading as VanLoading,
   Icon as VanIcon,
-  Tag as VanTag
+  Tag as VanTag,
+  Empty as VanEmpty,
+  Button as VanButton
 } from 'vant'
 
 const router = useRouter()
+const historyStore = useHistoryStore()
 
 const refreshing = ref(false)
-const loading = ref(false)
-const finished = ref(false)
-
-// 模拟历史记录数据
-const historyRecords = ref([
-  {
-    id: 1,
-    sport: '匹克球',
-    date: '2024-10-20',
-    title: '周末匹克球友谊赛',
-    location: '朝阳体育馆',
-    participants: [
-      { id: 1, name: '张三' },
-      { id: 2, name: '李四' },
-      { id: 3, name: '王五' }
-    ],
-    result: 'win',
-    score: '21-18'
-  },
-  {
-    id: 2,
-    sport: '网球',
-    date: '2024-10-18',
-    title: '网球双打练习',
-    location: '海淀网球中心',
-    participants: [
-      { id: 1, name: '张三' },
-      { id: 4, name: '赵六' }
-    ],
-    result: 'loss',
-    score: '4-6, 3-6'
-  },
-  {
-    id: 3,
-    sport: '羽毛球',
-    date: '2024-10-15',
-    title: '羽毛球混双比赛',
-    location: '东单体育中心',
-    participants: [
-      { id: 1, name: '张三' },
-      { id: 5, name: '钱七' }
-    ],
-    result: 'win',
-    score: '21-15, 21-17'
-  }
-])
 
 const goBack = () => {
   router.back()
 }
 
-const onRefresh = () => {
+const onRefresh = async () => {
   refreshing.value = true
-  setTimeout(() => {
+  
+  try {
+    await historyStore.loadHistoryRecords()
+  } catch (error) {
+    console.error('刷新历史记录失败:', error)
+  } finally {
     refreshing.value = false
-  }, 1000)
+  }
 }
 
-const onLoad = () => {
-  setTimeout(() => {
-    loading.value = false
-    finished.value = true
-  }, 1000)
+const formatTime = (dateString) => {
+  return new Date(dateString).toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const formatDate = (dateString) => {
@@ -157,16 +171,65 @@ const formatDate = (dateString) => {
     day: 'numeric'
   })
 }
+
+onMounted(() => {
+  // 页面加载时初始化历史记录
+  historyStore.loadHistoryRecords()
+})
 </script>
 
 <style scoped>
 .history-container {
-  height: 100vh;
+  min-height: 100vh;
   background-color: #f8f9fa;
 }
 
-.history-list {
+/* 统计信息样式 */
+.stats-section {
   padding: 16px;
+}
+
+.stats-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.history-list {
+  padding: 0 16px 16px;
+}
+
+/* 日期分组样式 */
+.date-group {
+  margin-bottom: 20px;
+}
+
+.date-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 4px solid #1989fa;
 }
 
 .history-card {
@@ -192,7 +255,7 @@ const formatDate = (dateString) => {
   font-weight: 500;
 }
 
-.date {
+.time {
   color: #999;
   font-size: 14px;
 }
@@ -208,7 +271,7 @@ const formatDate = (dateString) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .info-item {
@@ -219,30 +282,48 @@ const formatDate = (dateString) => {
   font-size: 14px;
 }
 
-.participants {
+/* 队伍信息样式 */
+.teams-section {
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
 }
 
-.label {
+.team-info {
+  flex: 1;
+}
+
+.team-label {
+  font-size: 12px;
   color: #666;
-  font-size: 14px;
-  white-space: nowrap;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
-.participant-list {
+.team-members {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
 }
 
 .participant-name {
-  background: #f0f0f0;
-  padding: 2px 8px;
+  background: #e8f4fd;
+  padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
-  color: #666;
+  color: #1989fa;
+}
+
+.vs-divider {
+  font-size: 14px;
+  font-weight: 600;
+  color: #999;
+  margin: 0 16px;
 }
 
 .record-footer {
@@ -254,5 +335,18 @@ const formatDate = (dateString) => {
 .score {
   color: #666;
   font-size: 14px;
+  font-weight: 600;
+}
+
+/* 加载和空状态样式 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
+}
+
+.empty-state {
+  padding: 40px 0;
 }
 </style>
