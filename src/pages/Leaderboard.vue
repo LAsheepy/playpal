@@ -27,71 +27,74 @@
     
     <!-- 排行榜内容 -->
     <div v-else class="leaderboard-content">
-      <!-- 前三名展示区 - 三角形布局 -->
-      <div v-if="topThreeUsers.length > 0" class="top-three-section">
-        <div class="top-three-title">🏆 顶尖高手</div>
-        <div class="triangle-layout">
-          <!-- 第二名 -->
-          <div class="rank-item rank-2">
-            <div class="rank-medal silver">🥈</div>
-            <div class="user-avatar">
+    <!-- 前三名展示区 - 紧凑圆形布局 -->
+    <div v-if="topThreeUsers.length > 0" class="top-three-section">
+      <div class="top-three-title">🏆 顶尖高手</div>
+      <div class="compact-circle-layout">
+        <!-- 第二名 -->
+        <div class="rank-circle rank-2">
+          <div class="circle-content">
+            <div class="medal-badge silver">🥈</div>
+            <div class="avatar-wrapper">
               <van-image
                 round
-                width="60"
-                height="60"
+                width="45"
+                height="45"
                 :src="topThreeUsers[1].avatar || '/default-avatar.jpg'"
               />
             </div>
-            <div class="user-info">
-              <div class="user-name">{{ topThreeUsers[1].nickname }}</div>
-              <div class="user-stats">
+            <div class="rank-info">
+              <div class="nickname">{{ topThreeUsers[1].nickname }}</div>
+              <div class="stats">
                 <span class="win-rate">{{ topThreeUsers[1].winRate }}%</span>
-                <span class="total-battles">{{ topThreeUsers[1].totalBattles }}场</span>
               </div>
             </div>
           </div>
-          
-          <!-- 第一名 -->
-          <div class="rank-item rank-1">
-            <div class="rank-medal gold">🥇</div>
-            <div class="user-avatar">
+        </div>
+        
+        <!-- 第一名 -->
+        <div class="rank-circle rank-1">
+          <div class="circle-content">
+            <div class="medal-badge gold">🥇</div>
+            <div class="avatar-wrapper">
               <van-image
                 round
-                width="80"
-                height="80"
+                width="55"
+                height="55"
                 :src="topThreeUsers[0].avatar || '/default-avatar.jpg'"
               />
             </div>
-            <div class="user-info">
-              <div class="user-name">{{ topThreeUsers[0].nickname }}</div>
-              <div class="user-stats">
+            <div class="rank-info">
+              <div class="nickname">{{ topThreeUsers[0].nickname }}</div>
+              <div class="stats">
                 <span class="win-rate">{{ topThreeUsers[0].winRate }}%</span>
-                <span class="total-battles">{{ topThreeUsers[0].totalBattles }}场</span>
               </div>
             </div>
           </div>
-          
-          <!-- 第三名 -->
-          <div class="rank-item rank-3">
-            <div class="rank-medal bronze">🥉</div>
-            <div class="user-avatar">
+        </div>
+        
+        <!-- 第三名 -->
+        <div class="rank-circle rank-3">
+          <div class="circle-content">
+            <div class="medal-badge bronze">🥉</div>
+            <div class="avatar-wrapper">
               <van-image
                 round
-                width="60"
-                height="60"
+                width="45"
+                height="45"
                 :src="topThreeUsers[2].avatar || '/default-avatar.jpg'"
               />
             </div>
-            <div class="user-info">
-              <div class="user-name">{{ topThreeUsers[2].nickname }}</div>
-              <div class="user-stats">
+            <div class="rank-info">
+              <div class="nickname">{{ topThreeUsers[2].nickname }}</div>
+              <div class="stats">
                 <span class="win-rate">{{ topThreeUsers[2].winRate }}%</span>
-                <span class="total-battles">{{ topThreeUsers[2].totalBattles }}场</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
       
       <!-- 其他用户列表 -->
       <div v-if="otherUsers.length > 0" class="other-users-section">
@@ -232,68 +235,46 @@ const refreshData = () => {
   overflow-y: auto;
 }
 
-/* 前三名展示区 */
+/* 前三名展示区 - 紧凑圆形布局 */
 .top-three-section {
-  padding: 20px 16px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  border-radius: 0 0 20px 20px;
-  margin-bottom: 16px;
+  padding: 16px 12px;
+  background: #ffffff;
+  border-radius: 12px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .top-three-title {
   text-align: center;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
   color: #333;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.triangle-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 10px;
-  align-items: end;
+.compact-circle-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
 }
 
-.rank-item {
+.rank-circle {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
 }
 
-.rank-item:hover {
-  transform: translateY(-2px);
+.circle-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
-.rank-1 {
-  grid-column: 2;
-  grid-row: 1;
-  order: 2;
-  padding: 20px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid #ffd700;
-}
-
-.rank-2 {
-  grid-column: 1;
-  grid-row: 2;
-  order: 1;
-}
-
-.rank-3 {
-  grid-column: 3;
-  grid-row: 2;
-  order: 3;
-}
-
-.rank-medal {
-  font-size: 24px;
+.medal-badge {
+  font-size: 20px;
   margin-bottom: 8px;
 }
 
@@ -309,37 +290,62 @@ const refreshData = () => {
   color: #cd7f32;
 }
 
-.user-avatar {
+.avatar-wrapper {
   margin-bottom: 8px;
 }
 
-.user-info {
+.rank-info {
   text-align: center;
+  width: 100%;
 }
 
-.user-name {
-  font-size: 14px;
-  font-weight: bold;
+.nickname {
+  font-size: 12px;
+  font-weight: 600;
   color: #333;
   margin-bottom: 4px;
   word-break: break-all;
+  line-height: 1.2;
 }
 
-.user-stats {
+.stats {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  justify-content: center;
 }
 
 .win-rate {
-  font-size: 12px;
+  font-size: 11px;
   color: #52c41a;
   font-weight: bold;
+  padding: 2px 6px;
+  background: #f6ffed;
+  border-radius: 10px;
 }
 
-.total-battles {
-  font-size: 10px;
-  color: #666;
+/* 第一名特殊样式 */
+.rank-1 {
+  order: 2;
+}
+
+.rank-1 .circle-content {
+  transform: scale(1.1);
+}
+
+.rank-1 .medal-badge {
+  font-size: 22px;
+}
+
+.rank-1 .nickname {
+  font-size: 13px;
+}
+
+/* 第二名和第三名 */
+.rank-2 {
+  order: 1;
+}
+
+.rank-3 {
+  order: 3;
 }
 
 /* 其他用户区域 */
@@ -390,59 +396,75 @@ const refreshData = () => {
 
 /* 响应式设计 */
 @media (max-width: 320px) {
-  .triangle-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(3, auto);
+  .compact-circle-layout {
+    flex-direction: column;
     gap: 12px;
   }
   
-  .rank-1, .rank-2, .rank-3 {
-    grid-column: 1;
-    grid-row: auto;
-    order: 0;
-  }
-  
-  .rank-item {
+  .rank-circle {
     flex-direction: row;
     align-items: center;
-    padding: 12px;
+    justify-content: flex-start;
+    width: 100%;
   }
   
-  .user-info {
+  .circle-content {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .medal-badge {
+    margin-right: 8px;
+    margin-bottom: 0;
+  }
+  
+  .avatar-wrapper {
+    margin-right: 8px;
+    margin-bottom: 0;
+  }
+  
+  .rank-info {
     text-align: left;
-    margin-left: 12px;
     flex: 1;
   }
   
-  .user-stats {
-    flex-direction: row;
-    gap: 8px;
+  .rank-1 .circle-content {
+    transform: none;
   }
 }
 
 @media (min-width: 768px) {
   .top-three-section {
-    padding: 30px 20px;
-  }
-  
-  .triangle-layout {
-    gap: 20px;
-  }
-  
-  .rank-item {
     padding: 20px 16px;
+    margin: 20px;
   }
   
-  .rank-1 {
-    padding: 25px 20px;
+  .compact-circle-layout {
+    gap: 12px;
   }
   
-  .user-name {
-    font-size: 16px;
+  .rank-1 .avatar-wrapper :deep(.van-image) {
+    width: 65px !important;
+    height: 65px !important;
   }
   
-  .win-rate, .total-battles {
+  .rank-2 .avatar-wrapper :deep(.van-image),
+  .rank-3 .avatar-wrapper :deep(.van-image) {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  .nickname {
     font-size: 14px;
+  }
+  
+  .rank-1 .nickname {
+    font-size: 15px;
+  }
+  
+  .win-rate {
+    font-size: 12px;
   }
 }
 </style>
