@@ -24,14 +24,14 @@
         <div class="about-card">
           <h2>项目介绍</h2>
           <div class="about-text">
-            <p>此项目来自一名终身热爱匹克球并将其作为事业的<strong>国家一级不误正业</strong>运动员，署名PlayPal开发者。</p>
+            <p>此项目来自一名终身热爱匹克球并将其作为事业的<strong>国家一级不误正业</strong>运动员  ---PlayPal开发者</p>
             
             <p>PlayPal致力于为运动爱好者提供一个便捷、高效的约球平台，让您能够轻松找到志同道合的球友，享受运动的乐趣。</p>
             
             <h3>平台特色：</h3>
             <ul>
               <li>🏸 支持多种球类运动：匹克球、网球、羽毛球等</li>
-              <li>👥 智能匹配：根据水平、位置、时间自动匹配球友</li>
+              <li>👥 便捷匹配：根据水平、位置、时间自行匹配球友</li>
               <li>📊 战绩记录：完整的对战历史和胜率统计</li>
               <li>💬 实时沟通：便捷的聊天和约球功能</li>
               <li>🌟 等级系统：科学的水平评级体系</li>
@@ -51,11 +51,11 @@
             </div>
             <div class="developer-item">
               <van-icon name="envelop-o" />
-              <span>联系邮箱：playpal@example.com</span>
+              <span>联系邮箱：zhouqinglong32@qq.com</span>
             </div>
             <div class="developer-item">
               <van-icon name="clock-o" />
-              <span>开发时间：2024年</span>
+              <span>开发时间：2025年10月</span>
             </div>
           </div>
         </div>
