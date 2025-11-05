@@ -162,12 +162,19 @@ const typeOptions = [
 ]
 
 // 类型选择确认
-const onTypeConfirm = (value, index) => {
-  // 根据Vant Picker文档，value是选中的文本，index是选中的索引
-  console.log('选择器确认:', value, index)
+const onTypeConfirm = (value) => {
+  console.log('选择器确认:', value)
   
-  // 直接使用选中的文本
-  feedbackType.value = value
+  // 根据Vant Picker的实际行为，传递的是选中的选项对象
+  if (value && value.text) {
+    feedbackType.value = value.text
+  } else if (typeof value === 'string') {
+    feedbackType.value = value
+  } else {
+    // 如果还是对象，尝试toString
+    feedbackType.value = String(value)
+  }
+  
   showTypePicker.value = false
 }
 

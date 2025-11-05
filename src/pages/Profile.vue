@@ -3,11 +3,12 @@
     <!-- 用户信息头部 -->
     <div class="profile-header">
       <div class="user-avatar">
-        <van-image
-          round
-          width="80"
-          height="80"
-          :src="userStore.userInfo.avatar || '/default-avatar.jpg'"
+        <Avatar
+          :nickname="userStore.userInfo.nickname"
+          :userId="userStore.userInfo.id"
+          :src="userStore.userInfo.avatar"
+          :size="80"
+          :bordered="true"
         />
         <van-uploader 
           :after-read="onAvatarUpload"
@@ -166,6 +167,10 @@ import {
   Button as VanButton
 } from 'vant'
 import EditProfile from '../components/EditProfile.vue'
+import Avatar from '../components/Avatar.vue'
+import Avatar from '../components/Avatar.vue'
+import Avatar from '../components/Avatar.vue'
+import Avatar from '../components/Avatar.vue'
 import { getSportColor, getLevelColor, getLevelTextColor } from '../utils/colors'
 
 const router = useRouter()
