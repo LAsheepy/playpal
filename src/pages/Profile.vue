@@ -92,12 +92,7 @@
           is-link
           @click="goToEditProfile"
         />
-        <van-cell 
-          title="我的球局" 
-          icon="friends-o" 
-          is-link
-          @click="goToMyMatches"
-        />
+
         <van-cell 
           title="历史记录" 
           icon="records" 
@@ -202,10 +197,6 @@ const onOversize = () => {
 // 导航功能
 const goToEditProfile = () => {
   showEditPopup.value = true
-}
-
-const goToMyMatches = () => {
-  router.push('/my-matches')
 }
 
 const goToHistory = () => {

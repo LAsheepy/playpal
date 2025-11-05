@@ -163,7 +163,14 @@ const typeOptions = [
 
 // 类型选择确认
 const onTypeConfirm = (value) => {
-  feedbackType.value = value.text
+  // 修复picker值获取问题
+  if (typeof value === 'object' && value.text) {
+    feedbackType.value = value.text
+  } else if (typeof value === 'string') {
+    // 如果直接是字符串，找到对应的选项
+    const option = typeOptions.find(opt => opt.text === value)
+    feedbackType.value = option ? option.text : value
+  }
   showTypePicker.value = false
 }
 
