@@ -31,7 +31,7 @@ export const useHistoryStore = defineStore('history', () => {
       isLoading.value = true
       errorMessage.value = ''
       
-      // 直接查询用户参与的对战记录
+      // 查询用户参与的所有对战记录，包括详细的参与者信息
       const { data: battlesData, error: battlesError } = await supabase
         .from('battles')
         .select(`
@@ -42,7 +42,7 @@ export const useHistoryStore = defineStore('history', () => {
             team,
             participant:profiles!battle_participants_participant_id_fkey(nickname, avatar)
           ),
-          match:matches!battles_match_id_fkey(title, sport, location)
+          match:matches!battles_match_id_fkey(title, sport, location, max_participants)
         `)
         .eq('participants.participant_id', userStore.userInfo.id)
         .order('created_at', { ascending: false })
@@ -53,41 +53,98 @@ export const useHistoryStore = defineStore('history', () => {
         throw battlesError
       }
       
-      // 转换数据格式
-      historyRecords.value = battlesData.map(battle => {
+      // 按球局(match_id)分组对战记录
+      const matchGroups = {}
+      
+      battlesData.forEach(battle => {
+        const matchId = battle.match_id
+        if (!matchGroups[matchId]) {
+          matchGroups[matchId] = {
+            matchId: matchId,
+            title: battle.match?.title || battle.title || '球局对战',
+            sport: battle.sport,
+            location: battle.location || battle.match?.location || '未知场地',
+            date: battle.time,
+            battles: [],
+            participants: new Set(),
+            teamA: new Set(),
+            teamB: new Set()
+          }
+        }
+        
+        // 添加当前对战信息
         const userTeam = battle.participants?.find(p => p.participant_id === userStore.userInfo.id)?.team
         const isWinner = battle.winner_team === userTeam
         
-        // 获取参与者信息
-        const participants = battle.participants?.map(p => ({
-          id: p.participant_id,
-          name: p.participant?.nickname || '未知用户',
-          avatar: p.participant?.avatar || '',
-          team: p.team
-        })) || []
+        // 收集参与者信息
+        battle.participants?.forEach(p => {
+          matchGroups[matchId].participants.add(p.participant_id)
+          if (p.team === 'A') {
+            matchGroups[matchId].teamA.add(p.participant_id)
+          } else if (p.team === 'B') {
+            matchGroups[matchId].teamB.add(p.participant_id)
+          }
+        })
         
-        // 按队伍分组参与者
-        const teamA = participants.filter(p => p.team === 'A')
-        const teamB = participants.filter(p => p.team === 'B')
+        matchGroups[matchId].battles.push({
+          id: battle.id,
+          score: `${battle.score_a || 0}-${battle.score_b || 0}`,
+          result: isWinner ? 'win' : 'loss',
+          winnerTeam: battle.winner_team,
+          time: battle.time
+        })
+      })
+      
+      // 转换为最终的历史记录格式
+      historyRecords.value = Object.values(matchGroups).map(group => {
+        // 获取对手信息（与当前用户不同队伍的参与者）
+        const userTeam = group.battles[0]?.result === 'win' ? group.battles[0].winnerTeam : 
+                        (group.battles[0]?.result === 'loss' ? (group.battles[0].winnerTeam === 'A' ? 'B' : 'A') : 'A')
+        
+        const opponentTeam = userTeam === 'A' ? 'B' : 'A'
+        const opponentIds = opponentTeam === 'A' ? Array.from(group.teamA) : Array.from(group.teamB)
+        
+        // 获取对手名称（从battles数据中查找）
+        const opponentNames = []
+        battlesData.forEach(battle => {
+          if (battle.match_id === group.matchId) {
+            battle.participants?.forEach(p => {
+              if (p.participant_id !== userStore.userInfo.id && 
+                  opponentIds.includes(p.participant_id) &&
+                  p.participant?.nickname) {
+                opponentNames.push(p.participant.nickname)
+              }
+            })
+          }
+        })
+        
+        // 去重对手名称
+        const uniqueOpponentNames = [...new Set(opponentNames)]
+        
+        // 计算总胜场数
+        const totalWins = group.battles.filter(battle => battle.result === 'win').length
+        const totalBattles = group.battles.length
         
         return {
-          id: battle.id,
-          sport: battle.sport,
-          date: battle.time,
-          title: battle.title || battle.match?.title || '对战记录',
-          location: battle.location || battle.match?.location || '未知场地',
-          participants: participants,
-          result: isWinner ? 'win' : 'loss',
-          score: `${battle.score_a || 0}-${battle.score_b || 0}`,
-          teamA: teamA,
-          teamB: teamB,
-          creator: battle.creator,
-          matchTitle: battle.match?.title,
-          createdAt: battle.created_at
+          id: group.matchId, // 使用球局ID作为唯一标识
+          sport: group.sport,
+          date: group.date,
+          title: group.title,
+          location: group.location,
+          participants: Array.from(group.participants).length,
+          result: totalWins > totalBattles / 2 ? 'win' : 'loss',
+          score: `${totalWins}-${totalBattles - totalWins}`,
+          teamA: Array.from(group.teamA).length,
+          teamB: Array.from(group.teamB).length,
+          battles: group.battles,
+          opponentNames: uniqueOpponentNames,
+          totalBattles: totalBattles,
+          wins: totalWins,
+          isGrouped: true // 标记为合并记录
         }
       })
       
-      console.log('成功加载历史记录:', historyRecords.value.length)
+      console.log('成功加载历史记录:', historyRecords.value.length, '个球局')
       return { success: true }
     } catch (error) {
       console.error('加载历史记录失败:', error)
@@ -121,7 +178,37 @@ export const useHistoryStore = defineStore('history', () => {
           loadHistoryRecords()
         }
       )
-      .subscribe()
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'battle_participants'
+        },
+        (payload) => {
+          console.log('收到对战参与者表更新:', payload)
+          
+          // 重新加载历史记录
+          loadHistoryRecords()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matches'
+        },
+        (payload) => {
+          console.log('收到球局表更新:', payload)
+          
+          // 重新加载历史记录
+          loadHistoryRecords()
+        }
+      )
+      .subscribe((status) => {
+        console.log('实时订阅状态:', status)
+      })
   }
 
   // 初始化历史记录

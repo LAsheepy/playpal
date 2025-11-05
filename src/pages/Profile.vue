@@ -96,21 +96,19 @@
           title="我的球局" 
           icon="friends-o" 
           is-link
-          :value="myMatchesCount"
           @click="goToMyMatches"
         />
         <van-cell 
           title="历史记录" 
           icon="records" 
           is-link
-          :value="historyCount"
           @click="goToHistory"
         />
         <van-cell 
-          title="收藏" 
-          icon="star-o" 
+          title="设置" 
+          icon="setting-o" 
           is-link
-          @click="goToFavorites"
+          @click="goToSettings"
         />
         <van-cell 
           title="设置" 
@@ -175,19 +173,7 @@ const matchStore = useMatchStore()
 
 const showEditPopup = ref(false)
 
-// 计算属性
-const myMatchesCount = computed(() => {
-  const matches = matchStore.matchList.filter(match => 
-    match.creator.id === userStore.userInfo.id ||
-    match.participants.some(p => p.id === userStore.userInfo.id)
-  )
-  return matches.length
-})
-
-const historyCount = computed(() => {
-  // 模拟历史记录数量
-  return 12
-})
+// 计算属性 - 已移除数字显示
 
 // 头像上传
 const onAvatarUpload = (file) => {
@@ -224,12 +210,7 @@ const goToSettings = () => {
   router.push('/settings')
 }
 
-const goToFavorites = () => {
-  showToast({
-    message: '收藏功能开发中',
-    className: 'custom-toast'
-  })
-}
+
 
 // 根据数值水平获取等级分类
 const getLevelCategory = (level) => {

@@ -71,22 +71,54 @@
                   </div>
                   <div class="info-item">
                     <van-icon name="friends-o" />
-                    <span>{{ record.participants.length }}人参与</span>
+                    <span>{{ record.participants }}人参与</span>
+                  </div>
+                  <div class="info-item" v-if="record.opponentNames && record.opponentNames.length > 0">
+                    <van-icon name="user-o" />
+                    <span class="opponent-names">对手: {{ record.opponentNames.join('、') }}</span>
                   </div>
                 </div>
                 
-                <!-- 队伍信息 -->
-                <div class="teams-section">
+                <!-- 对战统计信息 -->
+                <div class="battle-stats" v-if="record.isGrouped && record.battles">
+                  <div class="battle-summary">
+                    <span class="battle-count">
+                      <van-icon name="records" />
+                      共{{ record.totalBattles }}场对战
+                    </span>
+                    <span class="win-rate">胜率: {{ Math.round((record.wins / record.totalBattles) * 100) }}%</span>
+                  </div>
+                  
+                  <!-- 对战详情展开/收起 -->
+                  <div class="battle-details" v-if="record.battles.length > 1">
+                    <van-collapse v-model="expandedBattles" accordion>
+                      <van-collapse-item :title="`查看${record.battles.length}场对战详情`" :name="record.id">
+                        <div class="battle-list">
+                          <div 
+                            v-for="battle in record.battles" 
+                            :key="battle.id"
+                            class="battle-item"
+                          >
+                            <div class="battle-time">{{ formatTime(battle.time) }}</div>
+                            <div class="battle-result" :class="{ 'win': battle.result === 'win', 'loss': battle.result === 'loss' }">
+                              <van-tag :type="battle.result === 'win' ? 'success' : 'danger'" size="small">
+                                {{ battle.result === 'win' ? '胜利' : '失败' }}
+                              </van-tag>
+                              <span class="battle-score">{{ battle.score }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </van-collapse-item>
+                    </van-collapse>
+                  </div>
+                </div>
+                
+                <!-- 单条对战记录显示 -->
+                <div class="teams-section" v-else>
                   <div class="team-info">
                     <div class="team-label">A队</div>
                     <div class="team-members">
-                      <span 
-                        v-for="participant in record.teamA" 
-                        :key="participant.id"
-                        class="participant-name"
-                      >
-                        {{ participant.name }}
-                      </span>
+                      <span class="team-count">{{ record.teamA }}人</span>
                     </div>
                   </div>
                   
@@ -95,13 +127,7 @@
                   <div class="team-info">
                     <div class="team-label">B队</div>
                     <div class="team-members">
-                      <span 
-                        v-for="participant in record.teamB" 
-                        :key="participant.id"
-                        class="participant-name"
-                      >
-                        {{ participant.name }}
-                      </span>
+                      <span class="team-count">{{ record.teamB }}人</span>
                     </div>
                   </div>
                 </div>
@@ -133,13 +159,16 @@ import {
   Icon as VanIcon,
   Tag as VanTag,
   Empty as VanEmpty,
-  Button as VanButton
+  Button as VanButton,
+  Collapse as VanCollapse,
+  CollapseItem as VanCollapseItem
 } from 'vant'
 
 const router = useRouter()
 const historyStore = useHistoryStore()
 
 const refreshing = ref(false)
+const expandedBattles = ref([])
 
 const goBack = () => {
   router.back()
@@ -336,6 +365,90 @@ onMounted(() => {
   color: #666;
   font-size: 14px;
   font-weight: 600;
+}
+
+/* 对战统计样式 */
+.battle-stats {
+  margin-bottom: 16px;
+}
+
+.battle-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.battle-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666;
+}
+
+.win-rate {
+  font-size: 14px;
+  color: #1989fa;
+  font-weight: 600;
+}
+
+.battle-details {
+  margin-top: 8px;
+}
+
+.battle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.battle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.battle-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.battle-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.battle-result.win .battle-score {
+  color: #07c160;
+  font-weight: 600;
+}
+
+.battle-result.loss .battle-score {
+  color: #ee0a24;
+  font-weight: 600;
+}
+
+.battle-score {
+  font-size: 14px;
+}
+
+/* 对手名称样式 */
+.opponent-names {
+  color: #1989fa;
+  font-weight: 500;
+}
+
+.team-count {
+  background: #e8f4fd;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #1989fa;
 }
 
 /* 加载和空状态样式 */

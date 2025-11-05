@@ -8,20 +8,125 @@
       @click-left="goBack"
     />
     
-    <!-- 球局列表 -->
+    <!-- 分类标签 -->
+    <van-tabs v-model:active="activeTab" @change="onTabChange">
+      <van-tab title="全部球局">
+        <MatchList 
+          :matches="myMatches" 
+          :loading="loading"
+          :refreshing="refreshing"
+          :finished="finished"
+          @refresh="onRefresh"
+          @load="onLoad"
+          @match-click="goToMatchDetail"
+        />
+      </van-tab>
+      <van-tab title="我创建的">
+        <MatchList 
+          :matches="createdMatches" 
+          :loading="loading"
+          :refreshing="refreshing"
+          :finished="finished"
+          @refresh="onRefresh"
+          @load="onLoad"
+          @match-click="goToMatchDetail"
+        />
+      </van-tab>
+      <van-tab title="我参与的">
+        <MatchList 
+          :matches="participatedMatches" 
+          :loading="loading"
+          :refreshing="refreshing"
+          :finished="finished"
+          @refresh="onRefresh"
+          @load="onLoad"
+          @match-click="goToMatchDetail"
+        />
+      </van-tab>
+    </van-tabs>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useMatchStore } from '../stores/match'
+import { useUserStore } from '../stores/user'
+import { getSportColor, getLevelColor } from '../utils/colors'
+import {
+  NavBar as VanNavBar,
+  Tabs as VanTabs,
+  Tab as VanTab,
+  PullRefresh as VanPullRefresh,
+  List as VanList,
+  Icon as VanIcon,
+  Tag as VanTag,
+  Empty as VanEmpty
+} from 'vant'
+
+// 球局列表组件
+const MatchList = {
+  props: ['matches', 'loading', 'refreshing', 'finished'],
+  emits: ['refresh', 'load', 'match-click'],
+  setup(props, { emit }) {
+    const userStore = useUserStore()
+    
+    const getMatchStatus = (match) => {
+      const now = new Date()
+      const matchTime = new Date(match.time)
+      
+      if (matchTime > now) {
+        return '未开始'
+      } else if (matchTime.getTime() + 3 * 60 * 60 * 1000 > now.getTime()) {
+        return '进行中'
+      } else {
+        return '已结束'
+      }
+    }
+    
+    const getMatchStatusType = (match) => {
+      const status = getMatchStatus(match)
+      switch (status) {
+        case '未开始': return 'primary'
+        case '进行中': return 'success'
+        case '已结束': return 'warning'
+        default: return 'default'
+      }
+    }
+    
+    const formatTime = (time) => {
+      return new Date(time).toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+    
+    return {
+      getSportColor,
+      getLevelColor,
+      getMatchStatus,
+      getMatchStatusType,
+      formatTime,
+      userStore
+    }
+  },
+  template: `
     <div class="matches-list">
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <van-pull-refresh v-model="refreshing" @refresh="$emit('refresh')">
+        <van-empty v-if="matches.length === 0 && !loading" description="暂无球局" />
         <van-list
           v-model:loading="loading"
           :finished="finished"
           finished-text="没有更多了"
-          @load="onLoad"
+          @load="$emit('load')"
         >
           <div
-            v-for="match in myMatches"
+            v-for="match in matches"
             :key="match.id"
             class="match-card"
-            @click="goToMatchDetail(match.id)"
+            @click="$emit('match-click', match.id)"
           >
             <div class="match-header">
               <span class="sport-tag" :style="{ backgroundColor: getSportColor(match.sport) }">
@@ -29,6 +134,9 @@
               </span>
               <span class="level-tag" :style="{ backgroundColor: getLevelColor(match.creator.level) }">
                 {{ match.creator.level }}
+              </span>
+              <span class="role-tag" :class="{ creator: match.creator.id === userStore.userInfo.id }">
+                {{ match.creator.id === userStore.userInfo.id ? '创建者' : '参与者' }}
               </span>
             </div>
             
@@ -49,45 +157,38 @@
               </div>
             </div>
             
-            <div class="match-status">
-              <van-tag type="primary">
-                进行中
-              </van-tag>
+            <div class="match-footer">
+              <div class="match-status">
+                <van-tag :type="getMatchStatusType(match)">
+                  {{ getMatchStatus(match) }}
+                </van-tag>
+              </div>
+              <div class="match-creator">
+                <span v-if="match.creator.id !== userStore.userInfo.id">
+                  创建者: {{ match.creator.nickname }}
+                </span>
+              </div>
             </div>
           </div>
         </van-list>
       </van-pull-refresh>
     </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useMatchStore } from '../stores/match'
-import { useUserStore } from '../stores/user'
-import { getSportColor, getLevelColor } from '../utils/colors'
-import {
-  NavBar as VanNavBar,
-  PullRefresh as VanPullRefresh,
-  List as VanList,
-  Icon as VanIcon,
-  Tag as VanTag
-} from 'vant'
+  `
+}
 
 const router = useRouter()
 const matchStore = useMatchStore()
 const userStore = useUserStore()
 
+const activeTab = ref(0)
 const refreshing = ref(false)
 const loading = ref(false)
 const finished = ref(false)
 
-const myMatches = computed(() => {
-  return matchStore.matchList.filter(match => 
-    match.creator.id === userStore.userInfo.id
-  )
-})
+// 计算属性获取不同分类的球局
+const myMatches = computed(() => matchStore.getMyMatches())
+const createdMatches = computed(() => matchStore.getCreatedMatches())
+const participatedMatches = computed(() => matchStore.getParticipatedMatches())
 
 const goBack = () => {
   router.back()
@@ -97,11 +198,16 @@ const goToMatchDetail = (matchId) => {
   router.push(`/match/${matchId}`)
 }
 
+const onTabChange = (index) => {
+  activeTab.value = index
+}
+
 const onRefresh = () => {
   refreshing.value = true
-  setTimeout(() => {
+  // 重新加载数据
+  matchStore.loadMatches().then(() => {
     refreshing.value = false
-  }, 1000)
+  })
 }
 
 const onLoad = () => {
@@ -109,15 +215,6 @@ const onLoad = () => {
     loading.value = false
     finished.value = true
   }, 1000)
-}
-
-const formatTime = (time) => {
-  return new Date(time).toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 onMounted(async () => {
@@ -138,8 +235,6 @@ onMounted(async () => {
     console.error('加载球局数据失败:', error)
   }
 })
-
-// 由于数据库中没有status字段，默认显示"进行中"状态
 </script>
 
 <style scoped>
@@ -150,6 +245,8 @@ onMounted(async () => {
 
 .matches-list {
   padding: 16px;
+  height: calc(100vh - 96px);
+  overflow-y: auto;
 }
 
 .match-card {
@@ -158,6 +255,13 @@ onMounted(async () => {
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.match-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .match-header {
@@ -165,14 +269,24 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 8px;
 }
 
-.sport-tag, .level-tag {
+.sport-tag, .level-tag, .role-tag {
   color: white;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.role-tag {
+  background-color: #666;
+}
+
+.role-tag.creator {
+  background-color: #1989fa;
 }
 
 .match-title {
@@ -180,6 +294,7 @@ onMounted(async () => {
   font-weight: 600;
   margin-bottom: 12px;
   color: #333;
+  line-height: 1.4;
 }
 
 .match-info {
@@ -197,7 +312,32 @@ onMounted(async () => {
   font-size: 14px;
 }
 
+.match-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .match-status {
+  flex-shrink: 0;
+}
+
+.match-creator {
+  font-size: 12px;
+  color: #999;
   text-align: right;
+  flex: 1;
+}
+
+:deep(.van-tabs__line) {
+  background-color: #1989fa;
+}
+
+:deep(.van-tab) {
+  font-size: 14px;
+}
+
+:deep(.van-tab--active) {
+  color: #1989fa;
 }
 </style>

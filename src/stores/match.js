@@ -387,6 +387,48 @@ export const useMatchStore = defineStore('match', () => {
     }
   }
 
+  // 获取用户参与的所有球局（包括创建的和参与的）
+  const getMyMatches = () => {
+    if (!userStore.isLoggedIn || !userStore.userInfo.id) {
+      return []
+    }
+    
+    const userId = userStore.userInfo.id
+    return matchList.value.filter(match => {
+      // 用户创建的球局
+      const isCreator = match.creator.id === userId
+      // 用户参与的球局
+      const isParticipant = match.participants.some(p => p.id === userId)
+      
+      return isCreator || isParticipant
+    })
+  }
+
+  // 获取用户创建的球局
+  const getCreatedMatches = () => {
+    if (!userStore.isLoggedIn || !userStore.userInfo.id) {
+      return []
+    }
+    
+    const userId = userStore.userInfo.id
+    return matchList.value.filter(match => match.creator.id === userId)
+  }
+
+  // 获取用户参与的球局（非创建者）
+  const getParticipatedMatches = () => {
+    if (!userStore.isLoggedIn || !userStore.userInfo.id) {
+      return []
+    }
+    
+    const userId = userStore.userInfo.id
+    return matchList.value.filter(match => {
+      const isCreator = match.creator.id === userId
+      const isParticipant = match.participants.some(p => p.id === userId)
+      
+      return !isCreator && isParticipant
+    })
+  }
+
   // 获取筛选后的球局列表
   const getFilteredMatches = () => {
     return matchList.value.filter(match => {
@@ -430,6 +472,9 @@ export const useMatchStore = defineStore('match', () => {
     getMatchDetail,
     updateFilter,
     getFilteredMatches,
+    getMyMatches,
+    getCreatedMatches,
+    getParticipatedMatches,
     clearError
   }
 })
