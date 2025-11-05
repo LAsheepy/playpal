@@ -168,9 +168,6 @@ import {
 } from 'vant'
 import EditProfile from '../components/EditProfile.vue'
 import Avatar from '../components/Avatar.vue'
-import Avatar from '../components/Avatar.vue'
-import Avatar from '../components/Avatar.vue'
-import Avatar from '../components/Avatar.vue'
 import { getSportColor, getLevelColor, getLevelTextColor } from '../utils/colors'
 
 const router = useRouter()
