@@ -5,6 +5,7 @@
       <router-view />
       <van-tabbar v-model="activeTab" @change="onTabChange">
         <van-tabbar-item icon="home-o" to="/home">球局</van-tabbar-item>
+        <van-tabbar-item icon="medal-o" to="/leaderboard">排行榜</van-tabbar-item>
         <van-tabbar-item icon="user-o" to="/profile">我的</van-tabbar-item>
       </van-tabbar>
     </div>

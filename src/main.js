@@ -21,6 +21,7 @@ import Settings from './pages/Settings.vue'
 import AdminDashboard from './pages/AdminDashboard.vue'
 import About from './pages/About.vue'
 import HelpFeedback from './pages/HelpFeedback.vue'
+import Leaderboard from './pages/Leaderboard.vue'
 
 // 路由配置
 const routes = [
@@ -36,7 +37,8 @@ const routes = [
   { path: '/settings', component: Settings },
   { path: '/admin', component: AdminDashboard },
   { path: '/about', component: About },
-  { path: '/help-feedback', component: HelpFeedback }
+  { path: '/help-feedback', component: HelpFeedback },
+  { path: '/leaderboard', component: Leaderboard }
 ]
 
 const router = createRouter({
