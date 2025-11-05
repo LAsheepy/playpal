@@ -231,6 +231,14 @@ onMounted(async () => {
     } else {
       await matchStore.loadMatches()
     }
+    
+    // 添加调试信息
+    console.log('MyMatches页面加载完成')
+    console.log('当前用户ID:', userStore.userInfo.id)
+    console.log('全部球局数量:', myMatches.value.length)
+    console.log('创建的球局数量:', createdMatches.value.length)
+    console.log('参与的球局数量:', participatedMatches.value.length)
+    
   } catch (error) {
     console.error('加载球局数据失败:', error)
   }

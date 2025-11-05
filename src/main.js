@@ -19,6 +19,8 @@ import MyMatches from './pages/MyMatches.vue'
 import History from './pages/History.vue'
 import Settings from './pages/Settings.vue'
 import AdminDashboard from './pages/AdminDashboard.vue'
+import About from './pages/About.vue'
+import HelpFeedback from './pages/HelpFeedback.vue'
 
 // 路由配置
 const routes = [
@@ -32,7 +34,9 @@ const routes = [
   { path: '/my-matches', component: MyMatches },
   { path: '/history', component: History },
   { path: '/settings', component: Settings },
-  { path: '/admin', component: AdminDashboard }
+  { path: '/admin', component: AdminDashboard },
+  { path: '/about', component: About },
+  { path: '/help-feedback', component: HelpFeedback }
 ]
 
 const router = createRouter({

@@ -315,6 +315,91 @@
           </van-list>
         </div>
       </div>
+
+      <!-- 用户反馈列表 -->
+      <div v-if="activeNav === 'feedbacks'" class="list-section">
+        <div class="section-header">
+          <h2>用户反馈列表</h2>
+          <span class="total-count">共 {{ feedbacks.length }} 条反馈</span>
+        </div>
+        
+        <div class="search-bar">
+          <van-search
+            v-model="feedbackSearch"
+            placeholder="搜索反馈内容或联系方式"
+            shape="round"
+            @search="searchFeedbacks"
+          />
+        </div>
+        
+        <div class="table-container">
+          <van-list
+            v-model:loading="loadingFeedbacks"
+            :finished="finishedFeedbacks"
+            finished-text="没有更多了"
+            @load="loadFeedbacks"
+          >
+            <div class="feedback-table">
+              <div class="table-header">
+                <div class="col-user">用户</div>
+                <div class="col-content">反馈内容</div>
+                <div class="col-type">类型</div>
+                <div class="col-contact">联系方式</div>
+                <div class="col-status">状态</div>
+                <div class="col-time">提交时间</div>
+                <div class="col-actions">操作</div>
+              </div>
+              
+              <div 
+                v-for="feedback in filteredFeedbacks"
+                :key="feedback.id"
+                class="table-row"
+              >
+                <div class="col-user">{{ feedback.user?.nickname || '匿名用户' }}</div>
+                <div class="col-content">{{ feedback.content }}</div>
+                <div class="col-type">
+                  <van-tag 
+                    :type="getFeedbackTypeTag(feedback.type)"
+                    size="small"
+                  >
+                    {{ feedback.type || 'general' }}
+                  </van-tag>
+                </div>
+                <div class="col-contact">{{ feedback.contact_info || '未提供' }}</div>
+                <div class="col-status">
+                  <van-tag 
+                    :type="getStatusTag(feedback.status)"
+                    size="small"
+                  >
+                    {{ getStatusText(feedback.status) }}
+                  </van-tag>
+                </div>
+                <div class="col-time">{{ formatTime(feedback.created_at) }}</div>
+                <div class="col-actions">
+                  <van-button 
+                    v-if="feedback.status === 'pending'"
+                    type="success" 
+                    size="mini" 
+                    @click="resolveFeedback(feedback)"
+                    class="resolve-btn"
+                  >
+                    解决
+                  </van-button>
+                  <van-button 
+                    v-else
+                    type="default" 
+                    size="mini" 
+                    @click="reopenFeedback(feedback)"
+                    class="reopen-btn"
+                  >
+                    重新打开
+                  </van-button>
+                </div>
+              </div>
+            </div>
+          </van-list>
+        </div>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -343,6 +428,7 @@ import {
 import { adminApi } from '../utils/adminApi'
 import { useUserStore } from '../stores/user'
 import { getSportColor } from '../utils/colors'
+import { feedbackApi } from '../utils/supabase'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -351,7 +437,8 @@ const userStore = useUserStore()
 const navItems = [
   { id: 'overview', text: '数据总览', icon: 'chart-trending-o' },
   { id: 'users', text: '用户管理', icon: 'friends-o' },
-  { id: 'matches', text: '球局管理', icon: 'flag-o' }
+  { id: 'matches', text: '球局管理', icon: 'flag-o' },
+  { id: 'feedbacks', text: '用户反馈', icon: 'comment-o' }
 ]
 
 const activeNav = ref('overview')
@@ -362,9 +449,12 @@ const loading = ref(false)
 const finished = ref(false)
 const loadingMatches = ref(false)
 const finishedMatches = ref(false)
+const loadingFeedbacks = ref(false)
+const finishedFeedbacks = ref(false)
 
 const users = ref([])
 const matches = ref([])
+const feedbacks = ref([])
 const userStats = ref({
   totalUsers: 0,
   todayUsers: 0,
@@ -384,6 +474,7 @@ const levelStats = ref({
 // 搜索功能
 const userSearch = ref('')
 const matchSearch = ref('')
+const feedbackSearch = ref('')
 
 // 过滤后的数据
 const filteredUsers = computed(() => {
@@ -401,6 +492,16 @@ const filteredMatches = computed(() => {
   return matches.value.filter(match => 
     match.title?.toLowerCase().includes(searchTerm) ||
     match.location?.toLowerCase().includes(searchTerm)
+  )
+})
+
+const filteredFeedbacks = computed(() => {
+  if (!feedbackSearch.value) return feedbacks.value
+  const searchTerm = feedbackSearch.value.toLowerCase()
+  return feedbacks.value.filter(feedback => 
+    feedback.content?.toLowerCase().includes(searchTerm) ||
+    feedback.contact_info?.toLowerCase().includes(searchTerm) ||
+    feedback.user?.nickname?.toLowerCase().includes(searchTerm)
   )
 })
 
@@ -467,6 +568,27 @@ const loadMatches = async () => {
   }
 }
 
+// 加载反馈列表
+const loadFeedbacks = async () => {
+  try {
+    loadingFeedbacks.value = true
+    const { data, error } = await feedbackApi.getAllFeedbacks()
+    
+    if (error) {
+      showToast('加载反馈列表失败：' + error)
+      return
+    }
+    
+    feedbacks.value = data || []
+    finishedFeedbacks.value = true
+  } catch (error) {
+    console.error('加载反馈列表失败:', error)
+    showToast('加载反馈列表失败')
+  } finally {
+    loadingFeedbacks.value = false
+  }
+}
+
 // 加载统计数据
 const loadStats = async () => {
   try {
@@ -507,6 +629,10 @@ const searchMatches = () => {
   // 搜索逻辑已通过computed属性实现
 }
 
+const searchFeedbacks = () => {
+  // 搜索逻辑已通过computed属性实现
+}
+
 // 刷新数据
 const refreshData = async () => {
   const dbConnected = await checkDatabaseConnection()
@@ -515,10 +641,13 @@ const refreshData = async () => {
   await loadStats()
   users.value = []
   matches.value = []
+  feedbacks.value = []
   finished.value = false
   finishedMatches.value = false
+  finishedFeedbacks.value = false
   await loadUsers()
   await loadMatches()
+  await loadFeedbacks()
   showToast('数据已刷新')
 }
 
@@ -575,6 +704,91 @@ const deleteMatch = async (match) => {
     } catch (error) {
       console.error('删除球局失败:', error)
       showToast('删除失败，请重试')
+    }
+  })
+}
+
+// 反馈相关函数
+const getFeedbackTypeTag = (type) => {
+  const typeMap = {
+    'bug': 'danger',
+    'feature': 'primary',
+    'suggestion': 'warning',
+    'general': 'default'
+  }
+  return typeMap[type] || 'default'
+}
+
+const getStatusTag = (status) => {
+  const statusMap = {
+    'pending': 'warning',
+    'resolved': 'success',
+    'reopened': 'danger'
+  }
+  return statusMap[status] || 'default'
+}
+
+const getStatusText = (status) => {
+  const statusMap = {
+    'pending': '待处理',
+    'resolved': '已解决',
+    'reopened': '重新打开'
+  }
+  return statusMap[status] || status
+}
+
+// 解决反馈
+const resolveFeedback = async (feedback) => {
+  showConfirmDialog({
+    title: '确认解决',
+    message: '确定要将此反馈标记为已解决吗？',
+    className: 'custom-dialog'
+  }).then(async () => {
+    try {
+      const { error } = await feedbackApi.updateFeedbackStatus(feedback.id, 'resolved')
+      if (error) {
+        showToast('更新状态失败：' + error)
+        return
+      }
+      
+      showToast('反馈已标记为已解决')
+      // 更新本地状态
+      const index = feedbacks.value.findIndex(f => f.id === feedback.id)
+      if (index !== -1) {
+        feedbacks.value[index].status = 'resolved'
+        feedbacks.value[index].updated_at = new Date().toISOString()
+      }
+    } catch (error) {
+      console.error('解决反馈失败:', error)
+      showToast('操作失败，请重试')
+    }
+  })
+}
+
+// 重新打开反馈
+const reopenFeedback = async (feedback) => {
+  showConfirmDialog({
+    title: '确认重新打开',
+    message: '确定要重新打开此反馈吗？',
+    className: 'custom-dialog'
+  }).then(async () => {
+    try {
+      const { error } = await feedbackApi.updateFeedbackStatus(feedback.id, 'pending')
+      if (error) {
+        showToast('更新状态失败：' + error)
+        return
+      }
+      
+      showToast('反馈已重新打开')
+      // 更新本地状态
+      const index = feedbacks.value.findIndex(f => f.id === feedback.id)
+      if (index !== -1) {
+        feedbacks.value[index].status = 'pending'
+        feedbacks.value[index].updated_at = new Date().toISOString()
+      }
+    } catch (error) {
+      console.error('重新打开反馈失败:', error)
+      showToast('操作失败，请重试')
     }
   })
 }
@@ -976,6 +1190,22 @@ onUnmounted(() => {
 
 .match-table .table-row {
   grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px 120px;
+}
+
+.feedback-table .table-header {
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 120px;
+}
+
+.feedback-table .table-row {
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 120px;
+}
+
+.feedback-table .table-header {
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 120px;
+}
+
+.feedback-table .table-row {
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 120px;
 }
 
 .col-nickname, .col-email, .col-level, .col-time,

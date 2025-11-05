@@ -11,22 +11,10 @@
     <!-- 设置选项 -->
     <div class="settings-list">
       <van-cell-group>
-        <van-cell title="账号设置" icon="user-o" is-link @click="goToAccountSettings" />
-        <van-cell title="通知设置" icon="bell" is-link @click="goToNotificationSettings" />
-        <van-cell title="隐私设置" icon="lock" is-link @click="goToPrivacySettings" />
-        <van-cell title="关于我们" icon="info-o" is-link @click="goToAbout" />
-        <van-cell title="帮助与反馈" icon="question-o" is-link @click="goToHelp" />
+        <van-cell title="清除缓存" icon="delete-o" is-link @click="clearCache" />
       </van-cell-group>
       
       <div class="action-section">
-        <van-button 
-          type="default" 
-          block 
-          @click="clearCache"
-          class="action-btn"
-        >
-          清除缓存
-        </van-button>
         <van-button 
           type="danger" 
           block 

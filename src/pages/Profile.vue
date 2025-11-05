@@ -105,10 +105,16 @@
           @click="goToHistory"
         />
         <van-cell 
-          title="设置" 
-          icon="setting-o" 
+          title="关于我们" 
+          icon="info-o" 
           is-link
-          @click="goToSettings"
+          @click="goToAbout"
+        />
+        <van-cell 
+          title="帮助与反馈" 
+          icon="question-o" 
+          is-link
+          @click="goToHelpFeedback"
         />
         <van-cell 
           title="设置" 
@@ -208,6 +214,14 @@ const goToHistory = () => {
 
 const goToSettings = () => {
   router.push('/settings')
+}
+
+const goToAbout = () => {
+  router.push('/about')
+}
+
+const goToHelpFeedback = () => {
+  router.push('/help-feedback')
 }
 
 

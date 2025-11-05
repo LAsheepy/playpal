@@ -149,8 +149,10 @@ export const matchApi = {
       .from('matches')
       .select(`
         *,
-        creator:profiles!matches_creator_id_fkey(nickname, avatar, pickleball_level, tennis_level, badminton_level),
-        participants:match_participants!inner(participant:profiles!match_participants_participant_id_fkey(nickname, avatar))
+        creator:profiles!matches_creator_id_fkey(id, nickname, avatar, pickleball_level, tennis_level, badminton_level),
+        participants:match_participants(
+          participant:profiles!match_participants_participant_id_fkey(id, nickname, avatar)
+        )
       `)
       .order('created_at', { ascending: false })
 
@@ -336,6 +338,108 @@ export const battleApi = {
     }).length
     
     return { data: { totalBattles: userBattles.length, wins }, error: null }
+  }
+}
+
+// 反馈相关操作
+export const feedbackApi = {
+  // 提交反馈
+  async submitFeedback(feedbackData) {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .insert([feedbackData])
+      .select()
+    
+    if (error) {
+      console.error('提交反馈失败:', error)
+      return { data: null, error: this.getErrorMessage(error) }
+    }
+    
+    return { data, error: null }
+  },
+
+  // 获取用户反馈列表
+  async getUserFeedbacks(userId) {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('获取用户反馈失败:', error)
+      return { data: null, error }
+    }
+    
+    return { data, error: null }
+  },
+
+  // 获取所有反馈（管理员用）
+  async getAllFeedbacks() {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .select(`
+        *,
+        user:profiles(nickname, email)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('获取反馈列表失败:', error)
+      return { data: null, error }
+    }
+    
+    return { data, error: null }
+  },
+
+  // 更新反馈状态
+  async updateFeedbackStatus(feedbackId, status) {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .update({ 
+        status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', feedbackId)
+    
+    if (error) {
+      console.error('更新反馈状态失败:', error)
+      return { data: null, error }
+    }
+    
+    return { data, error: null }
+  },
+
+  // 获取反馈统计
+  async getFeedbackStats() {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .select('status')
+    
+    if (error) {
+      console.error('获取反馈统计失败:', error)
+      return { data: null, error }
+    }
+    
+    const stats = {
+      total: data.length,
+      pending: data.filter(f => f.status === 'pending').length,
+      resolved: data.filter(f => f.status === 'resolved').length
+    }
+    
+    return { data: stats, error: null }
+  },
+
+  // 错误消息处理
+  getErrorMessage(error) {
+    if (!error) return '未知错误'
+    
+    const errorMessages = {
+      'Network error': '网络连接失败，请检查网络设置',
+      'insert or update on table "feedbacks" violates foreign key constraint': '用户不存在'
+    }
+    
+    return errorMessages[error.message] || error.message || '操作失败，请稍后重试'
   }
 }
 

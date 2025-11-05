@@ -35,6 +35,8 @@ export const useMatchStore = defineStore('match', () => {
       isLoading.value = true
       errorMessage.value = ''
       
+      console.log('开始加载球局数据，用户ID:', userStore.userInfo.id)
+      
       const { data, error } = await matchApi.getMatches(filter.value)
       if (error) {
         console.error('API调用错误:', error)
@@ -49,6 +51,8 @@ export const useMatchStore = defineStore('match', () => {
         return { success: true }
       }
       
+      console.log('原始API返回数据:', data)
+      
       // 转换数据格式，添加空值检查
       matchList.value = data.map(match => {
         // 确保creator对象存在
@@ -56,7 +60,7 @@ export const useMatchStore = defineStore('match', () => {
         // 确保participants数组存在
         const participants = match.participants || []
         
-        return {
+        const processedMatch = {
           id: match.id,
           title: match.title,
           sport: match.sport,
@@ -81,9 +85,17 @@ export const useMatchStore = defineStore('match', () => {
             }
           })
         }
+        
+        console.log('处理后的球局:', processedMatch.id, '创建者:', processedMatch.creator.id, '参与者:', processedMatch.participants.map(p => p.id))
+        return processedMatch
       })
       
       console.log('成功加载球局数据:', matchList.value.length)
+      console.log('用户ID:', userStore.userInfo.id)
+      console.log('我的球局数量:', getMyMatches().length)
+      console.log('创建的球局数量:', getCreatedMatches().length)
+      console.log('参与的球局数量:', getParticipatedMatches().length)
+      
       return { success: true }
     } catch (error) {
       console.error('加载球局失败:', error)

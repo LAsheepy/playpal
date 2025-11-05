@@ -35,9 +35,12 @@ export const useUserStore = defineStore('user', () => {
       isLoading.value = true
       errorMessage.value = ''
       
+      console.log('开始初始化用户状态...')
+      
       // 检查是否为游客模式
       const isGuestModeStored = localStorage.getItem('isGuestMode') === 'true'
       if (isGuestModeStored) {
+        console.log('检测到游客模式，初始化游客用户')
         isGuestMode.value = true
         isLoggedIn.value = true
         // 恢复游客用户信息
@@ -53,19 +56,26 @@ export const useUserStore = defineStore('user', () => {
           badmintonLevel: '初级',
           bio: '我是体验用户，正在测试系统功能'
         }
+        console.log('游客用户初始化完成:', userInfo.value)
         return
       }
       
+      console.log('检查真实用户登录状态...')
       const user = await authApi.getCurrentUser()
+      
       if (user) {
+        console.log('检测到已登录用户:', user.id)
         const { data: profile, error } = await profileApi.getUserProfile(user.id)
+        
         if (error) {
           console.error('获取用户资料失败:', error)
           // 如果用户存在但资料不存在，创建默认资料
           if (error.message.includes('not found')) {
+            console.log('用户资料不存在，创建默认资料...')
             await createDefaultProfile(user)
           }
         } else if (profile) {
+          console.log('成功获取用户资料:', profile)
           // 映射数据库字段到前端字段
           userInfo.value = { 
             ...userInfo.value, 
@@ -82,13 +92,19 @@ export const useUserStore = defineStore('user', () => {
           }
           isLoggedIn.value = true
           localStorage.setItem('isLoggedIn', 'true')
+          console.log('用户状态初始化完成:', userInfo.value)
         }
+      } else {
+        console.log('用户未登录，清除登录状态')
+        isLoggedIn.value = false
+        localStorage.removeItem('isLoggedIn')
       }
     } catch (error) {
       console.error('初始化用户失败:', error)
       errorMessage.value = '初始化用户信息失败'
     } finally {
       isLoading.value = false
+      console.log('用户初始化过程结束，登录状态:', isLoggedIn.value, '用户ID:', userInfo.value.id)
     }
   }
 

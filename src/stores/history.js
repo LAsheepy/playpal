@@ -42,7 +42,7 @@ export const useHistoryStore = defineStore('history', () => {
             team,
             participant:profiles!battle_participants_participant_id_fkey(nickname, avatar)
           ),
-          match:matches!battles_match_id_fkey(title, sport, location, max_participants)
+          match:matches!battles_match_id_fkey(title, sport, location, max_players)
         `)
         .eq('participants.participant_id', userStore.userInfo.id)
         .order('created_at', { ascending: false })
