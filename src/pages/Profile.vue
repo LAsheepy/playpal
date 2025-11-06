@@ -111,12 +111,6 @@
           is-link
           @click="goToHelpFeedback"
         />
-        <van-cell 
-          title="设置" 
-          icon="setting-o" 
-          is-link
-          @click="goToSettings"
-        />
       </van-cell-group>
     </div>
 

@@ -38,45 +38,28 @@
         </span>
       </div>
       
-      <!-- 游客登录入口 -->
-      <div class="guest-login-section">
+      <!-- 游客登录和管理员登录按钮 -->
+      <div class="quick-login-section">
         <div class="divider">
           <span>或</span>
         </div>
-        <div style="margin: 16px;">
+        <div class="quick-login-buttons">
           <van-button 
             round 
-            block 
             type="default" 
             @click="onGuestLogin"
             class="guest-login-btn"
           >
-            🎯 游客登录
+            🎯 游客
           </van-button>
-        </div>
-        <div class="guest-notice">
-          <p>💡 无需注册，立即体验</p>
-        </div>
-      </div>
-      
-      <!-- 管理员登录入口 -->
-      <div class="admin-login-section">
-        <div class="divider">
-          <span>管理员</span>
-        </div>
-        <div style="margin: 16px;">
           <van-button 
             round 
-            block 
             type="warning" 
             @click="onAdminLogin"
             class="admin-login-btn"
           >
-            🔧 管理员登录
+            🔧 管理员
           </van-button>
-        </div>
-        <div class="admin-notice">
-          <p>⚙️ 访问数据总览和管理功能</p>
         </div>
       </div>
     </div>
@@ -288,16 +271,16 @@ const handleAdminLogin = async (email, password) => {
   cursor: pointer;
 }
 
-/* 游客登录样式 */
-.guest-login-section {
-  margin-top: 0px;
+/* 快捷登录样式 */
+.quick-login-section {
+  margin-top: 20px;
   border-top: 1px solid #f0f0f0;
-  padding-top: 0px;
+  padding-top: 20px;
 }
 
 .divider {
   text-align: center;
-  margin: 2px 0;
+  margin: 10px 0;
   position: relative;
 }
 
@@ -310,47 +293,25 @@ const handleAdminLogin = async (email, password) => {
   z-index: 2;
 }
 
+.quick-login-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px;
+}
+
 .guest-login-btn {
+  flex: 1;
   border: 1px solid #1989fa;
   color: #1989fa;
   background: white;
 }
 
-.guest-notice {
-  text-align: center;
-  margin-top: 15px;
-  font-size: 12px;
-  color: #666;
-  line-height: 1.5;
-}
-
-.guest-notice p {
-  margin: 5px 0;
-}
-
-/* 管理员登录样式 */
-.admin-login-section {
-  margin-top: 2px;
-  border-top: 1px solid #f0f0f0;
-  padding-top: 2px;
-}
-
 .admin-login-btn {
+  flex: 1;
   border: 1px solid #ff976a;
   color: #ff976a;
   background: white;
-}
-
-.admin-notice {
-  text-align: center;
-  margin-top: 15px;
-  font-size: 12px;
-  color: #666;
-  line-height: 1.5;
-}
-
-.admin-notice p {
-  margin: 5px 0;
 }
 
 /* 自定义弹窗样式 */
